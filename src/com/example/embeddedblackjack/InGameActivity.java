@@ -42,17 +42,21 @@ public class InGameActivity extends Activity{
         final TextView total_money = (TextView)findViewById(R.id.cashNum); //전체 보유 금액 Text View
         final TextView bet_money = (TextView)findViewById(R.id.betNum); //배팅금액 Text View
         final TextView cardAndItem = (TextView)findViewById(R.id.cardAndItem); //카드랑 아이템 보여주는 Text View
+        final TextView Score_board = (TextView)findViewById(R.id.splitView1); //플레이어 점수 판
+        final TextView Split_Card = (TextView)findViewById(R.id.splitCardSaveArea); //Split되어 플레이 대기 중인 카드
         
         //Button(버튼)
     	final Button hitBtn = (Button)findViewById(R.id.hit);
     	final Button stayBtn = (Button)findViewById(R.id.Stay);
     	final Button splitBtn = (Button)findViewById(R.id.Split);
     	final Button doubleBtn = (Button)findViewById(R.id.Double);
+
     	final Button chip_1 = (Button)findViewById(R.id.chip_1);
     	final Button chip_5 = (Button)findViewById(R.id.chip_5);
     	final Button chip_20 = (Button)findViewById(R.id.chip_20);
     	final Button chip_100 = (Button)findViewById(R.id.chip_100);
     	final Button chip_500 = (Button)findViewById(R.id.chip_500);
+    	
     	final Button gameStartBtn = (Button)findViewById(R.id.gameStartBtn);
         
     	//게임 버튼 처음엔 enable, 게임 시작해야 눌리게 함
@@ -60,7 +64,7 @@ public class InGameActivity extends Activity{
     	stayBtn.setEnabled(false);
     	splitBtn.setEnabled(false);
     	doubleBtn.setEnabled(false);
-    	
+
     	//설정값 받아오기
         Intent intent = getIntent();
         final int playerCnt = intent.getIntExtra("playerCnt",0);
@@ -122,6 +126,8 @@ public class InGameActivity extends Activity{
         
         deck = new Deck(levelCnt);
     	deck.Shuffle();	
+    	deck.Card_Shuffled[0] = "♠A";
+    	deck.Card_Shuffled[3] = "♠A";
     	
     	Me = p1; //본인 할당
      	Me.adapter = new ArrayAdapter<String>(this,R.layout.simpleitem, Me.Card);
@@ -208,7 +214,7 @@ public class InGameActivity extends Activity{
 			    		//유저가 딜러 패 훔쳐보기 아이템을 얻고 이 아이템을 사용하였을 시,
 			    		//String dealerTwo = item.peek(dealer);
 				        //Toast.makeText(getApplicationContext(), "딜러의 두 번째 카드는 '"+dealerTwo+"' 입니다.", Toast.LENGTH_LONG).show();
-			    	//}
+			    	//}					
 			    }
 				else{Toast.makeText(getApplicationContext(), "배팅을 해야 게임이 가능합니다.", Toast.LENGTH_LONG).show();}}
 		});
@@ -220,9 +226,7 @@ public class InGameActivity extends Activity{
 				Me.adapter.notifyDataSetChanged();
 				if(Me.bust){
         			for(int i=0; i<Ai_list.size(); i++)
-        			{
-        				Ai_turn(Ai_list.get(i));
-        			}
+        			{Ai_turn(Ai_list.get(i));}
 					Dealer_turn();
 					Me.bet = 0;
 					total_money.setText(Integer.toString(Me.total));
@@ -232,6 +236,7 @@ public class InGameActivity extends Activity{
 					chip_20.setEnabled(true);
 					chip_100.setEnabled(true);
 					chip_500.setEnabled(true);
+					
 					gameStartBtn.setEnabled(true);
 					
 			    	hitBtn.setEnabled(false);
@@ -249,19 +254,28 @@ public class InGameActivity extends Activity{
 					}
 				}
 	
-			});
-		
+		});
 		stayBtn.setOnClickListener(new Button.OnClickListener()
         {
         	public void onClick(View arg0) 
         	{
-        		if(!remain_p_list.isEmpty()){}
+        		if(!Me.Splited.isEmpty())
+        		{
+        			Me.Continue();
+        			Me.adapter.notifyDataSetChanged();
+        			String score_temp = (String)Me.score_board.get(0);
+        			String temp = (String) Split_Card.getText();
+        			String temp2;
+        			temp = temp.replaceAll((String)Me.Card.get(0), "");
+        			temp = temp.replaceAll(" ", "");
+        			Toast.makeText(getApplicationContext(), temp, Toast.LENGTH_LONG).show();
+        			Split_Card.setText(temp);
+        		}
         		else
         		{
+        			Me.Stay();
         			for(int i=0; i<Ai_list.size(); i++)
-        			{
-        				Ai_turn(Ai_list.get(i));
-        			}
+        			{Ai_turn(Ai_list.get(i));}
         			Dealer_turn();
         			total_money.setText(Integer.toString(Me.total));
         			bet_money.setText(Integer.toString(Me.bet));
@@ -278,18 +292,19 @@ public class InGameActivity extends Activity{
         			splitBtn.setEnabled(false);
         			doubleBtn.setEnabled(false);
         		}
-        	}	
-        });
-
+    		}
+		});
         splitBtn.setOnClickListener(new Button.OnClickListener()
         { 
         	public void onClick(View arg0) {
         	// TODO Auto-generated method stub
         		Me.Split();
         		Me.adapter.notifyDataSetChanged();
+        		String temp = (String) Split_Card.getText();
+        		String temp2 = (String) Me.Splited.get(0);
+        		Split_Card.setText(temp + " " + temp2);
 			}
         });
-        
         doubleBtn.setOnClickListener(new Button.OnClickListener()
         {
 			public void onClick(View arg0) {
@@ -339,36 +354,7 @@ public class InGameActivity extends Activity{
 	    	dealer.Card.remove(1);
 	    	dealer.Card.add(1,"unknown");
 	    	dealer.adapter.notifyDataSetChanged();
-	    }
-    void Dealer_turn()
-    {
-    	dealer.Card.remove(1);
-    	dealer.Card.add(1,dealer.Unknown);
-    	dealer.adapter.notifyDataSetChanged();
-    	
-    	while(dealer.score < 16 && !dealer.bust)
-    	{
-    		dealer.recieve(deck.distribute_card());
-    		dealer.adapter.notifyDataSetChanged();
-    	}
-    	
-    	if(!Me.bust)
-    	{
-    		if(Me.score > dealer.score)
-    			Me.total = Me.total + Me.bet;
-    		if(p1.score < dealer.score)
-    			Me.total = Me.total - Me.bet;
-    	}
-    	
-    	for(int i=0; i<Ai_list.size(); i++)
-    	{
-    		if(Ai_list.get(i).score > dealer.score)
-    			Ai_list.get(i).total = Ai_list.get(i).total + Ai_list.get(i).bet;
-    		if(Ai_list.get(i).score < dealer.score)
-    			Ai_list.get(i).total = Ai_list.get(i).total - Ai_list.get(i).bet;
-    	}
-    	Me.bet = 0;
-    }
+	}
     void Ai_turn(Ai ai) 
     {
     	while(!ai.bust){
@@ -389,7 +375,7 @@ public class InGameActivity extends Activity{
     			else
     				break;
     		}
-    		else if(ai.score > 16)
+    		else if(ai.score >= 16)
     		{
     			double temp;
     			temp = Math.random();
@@ -402,6 +388,39 @@ public class InGameActivity extends Activity{
     				break;
     		}
     	}
+    }
+    void Dealer_turn()
+    {
+    	dealer.Card.remove(1);
+    	dealer.Card.add(1,dealer.Unknown);
+    	dealer.adapter.notifyDataSetChanged();
+    	
+    	while(dealer.score < 16 && !dealer.bust)
+    	{
+    		dealer.recieve(deck.distribute_card());
+    		dealer.adapter.notifyDataSetChanged();
+    	}
+    	
+    	if(!Me.bust)
+    	{
+    		while(!Me.score_board.isEmpty())
+    		{
+    			int score = (Integer) Me.score_board.get(0);
+    			if(score > dealer.score)
+    				Me.total = Me.total + Me.bet;
+    			if(score < dealer.score)
+    				Me.total = Me.total - Me.bet;
+    			Me.score_board.remove(0);
+    		}
+    	}
+    	for(int i=0; i<Ai_list.size(); i++)
+    	{
+    		if(Ai_list.get(i).score > dealer.score)
+    			Ai_list.get(i).total = Ai_list.get(i).total + Ai_list.get(i).bet;
+    		if(Ai_list.get(i).score < dealer.score)
+    			Ai_list.get(i).total = Ai_list.get(i).total - Ai_list.get(i).bet;
+    	}
+    	Me.bet = 0;
     }
 
 }
