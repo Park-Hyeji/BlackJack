@@ -4,27 +4,25 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class GameRoom {
-	
-	//Player = GameUser
-	List<Player> userList;
-	Player roomOwner; // 방장
+	List<GameUser> userList;
+	GameUser roomOwner; // 방장
     String roomName; // 방 이름
     
 	public GameRoom() { // 아무도 없는 방을 생성할 때
-        userList = new ArrayList<Player>();
+        userList = new ArrayList<GameUser>();
     }
 	
-	public GameRoom(Player _user) { // 유저가 방을 만들때
-        userList = new ArrayList<Player>();
+	public GameRoom(GameUser _user) { // 유저가 방을 만들때
+        userList = new ArrayList<GameUser>();
         userList.add(_user); // 유저를 추가시킨 후
         this.roomOwner = _user; // 방장을 유저로 만든다.
     }
 	
-	public void EnterRoom(Player _user) {
+	public void EnterRoom(GameUser _user) {
         userList.add(_user);
     }
 	
-	public void ExitRoom(Player _user) {
+	public void ExitRoom(GameUser _user) {
         userList.remove(_user);
  
         if (userList.size() < 1) { // 모든 인원이 다 방을 나갔다면

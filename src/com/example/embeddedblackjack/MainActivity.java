@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.view.Menu;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.RadioGroup.OnCheckedChangeListener;
@@ -20,6 +21,10 @@ public class MainActivity extends Activity implements OnCheckedChangeListener{
 	RadioGroup aiCnt;
 	RadioGroup levelCnt;
 	Button gameStartBtn;
+	Button enterGameBtn;
+	EditText nickName;
+	
+	static int uidPlaceHolder = 0;
 	
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -33,6 +38,11 @@ public class MainActivity extends Activity implements OnCheckedChangeListener{
     	levelCnt = (RadioGroup)findViewById(R.id.levelCnt);
     	levelCnt.setOnCheckedChangeListener(this);
     	gameStartBtn = (Button)findViewById(R.id.gameStartBtn);
+    	enterGameBtn = (Button)findViewById(R.id.enterGameBtn);
+    	nickName = (EditText)findViewById(R.id.nickName);
+    	
+    	//방 생성 관련
+    	final RoomManager roomManager = new RoomManager();
         
         //게임 시작 누르면 InGame으로 바뀜
 
@@ -44,15 +54,29 @@ public class MainActivity extends Activity implements OnCheckedChangeListener{
 				 if(n_player + n_ai > 6)
 		               Toast.makeText(getApplicationContext(), "참가자는 6인을 초과할 수 없습니다", Toast.LENGTH_LONG).show();
 				 else{
-					//화면 전환
-					Intent intent = new Intent(MainActivity.this,InGameActivity.class);
+					 //방 만들기	
+					 GameUser user = new GameUser(uidPlaceHolder++, nickName.toString());
+					 GameRoom room = roomManager.CreateRoom(user); //룸 생성
+					 
+					 //화면 전환
+					 Intent intent = new Intent(MainActivity.this,InGameActivity.class);
 					
-					intent.putExtra("playerCnt", n_player); //플레이어 수 전달			
-					intent.putExtra("aiCnt", n_ai); //ai수 전달
-					intent.putExtra("levelCnt", n_deck); //레벨 값 전달
-					startActivity(intent);
-					finish();
+					 intent.putExtra("playerCnt", n_player); //플레이어 수 전달			
+					 intent.putExtra("aiCnt", n_ai); //ai수 전달
+					 intent.putExtra("levelCnt", n_deck); //레벨 값 전달
+					 startActivity(intent);
+					 finish();
 				}
+			}
+        }); 
+        
+        enterGameBtn.setOnClickListener(new Button.OnClickListener(){
+
+			public void onClick(View arg0) {
+				// TODO Auto-generated method stub
+				//방 리스트 보여주고 누르면 그 방으로 이동
+				Intent intent = new Intent(MainActivity.this,ActivityPopUp.class);
+				startActivity(intent);
 			}
         });
     }

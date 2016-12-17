@@ -20,7 +20,7 @@ public final class R {
         public static final int Double=0x7f07001e;
         public static final int Split=0x7f07001d;
         public static final int Stay=0x7f07001c;
-        public static final int aiCnt=0x7f070024;
+        public static final int aiCnt=0x7f070025;
         public static final int betNum=0x7f070002;
         public static final int cardAndItem=0x7f070006;
         public static final int cashNum=0x7f070001;
@@ -31,24 +31,28 @@ public final class R {
         public static final int chip_500=0x7f07001a;
         public static final int dealer=0x7f070004;
         public static final int deckNum=0x7f070007;
-        public static final int fourAI=0x7f070028;
-        public static final int fourDeck=0x7f07002d;
+        public static final int enterGameBtn=0x7f070030;
+        public static final int fourAI=0x7f070029;
+        public static final int fourDeck=0x7f07002e;
         public static final int gameStartBtn=0x7f070003;
         public static final int hit=0x7f07001b;
         public static final int item=0x7f070008;
-        public static final int levelCnt=0x7f07002a;
-        public static final int menu_settings=0x7f07002f;
-        public static final int oneAI=0x7f070025;
-        public static final int oneDeck=0x7f07002b;
-        public static final int onePlayer=0x7f070020;
+        public static final int levelCnt=0x7f07002b;
+        public static final int menu_settings=0x7f070033;
+        public static final int nickName=0x7f07001f;
+        public static final int oneAI=0x7f070026;
+        public static final int oneDeck=0x7f07002c;
+        public static final int onePlayer=0x7f070021;
         public static final int player1=0x7f070010;
         public static final int player2=0x7f070011;
         public static final int player3=0x7f070012;
         public static final int player4=0x7f070013;
         public static final int player5=0x7f070014;
         public static final int player6=0x7f070015;
-        public static final int playerCnt=0x7f07001f;
-        public static final int sixDeck=0x7f07002e;
+        public static final int playerCnt=0x7f070020;
+        public static final int realEnterRoomBtn=0x7f070032;
+        public static final int roomList=0x7f070031;
+        public static final int sixDeck=0x7f07002f;
         public static final int splitCardSaveArea=0x7f070009;
         public static final int splitView1=0x7f07000a;
         public static final int splitView2=0x7f07000b;
@@ -58,18 +62,19 @@ public final class R {
         public static final int splitView6=0x7f07000f;
         public static final int textView=0x7f070005;
         public static final int textView1=0x7f070000;
-        public static final int textView2=0x7f070023;
-        public static final int textView3=0x7f070029;
-        public static final int threeAI=0x7f070027;
-        public static final int threePlayer=0x7f070022;
-        public static final int twoAI=0x7f070026;
-        public static final int twoDeck=0x7f07002c;
-        public static final int twoPlayer=0x7f070021;
+        public static final int textView2=0x7f070024;
+        public static final int textView3=0x7f07002a;
+        public static final int threeAI=0x7f070028;
+        public static final int threePlayer=0x7f070023;
+        public static final int twoAI=0x7f070027;
+        public static final int twoDeck=0x7f07002d;
+        public static final int twoPlayer=0x7f070022;
     }
     public static final class layout {
         public static final int activity_ingame=0x7f030000;
         public static final int activity_main=0x7f030001;
-        public static final int simpleitem=0x7f030002;
+        public static final int activity_popup=0x7f030002;
+        public static final int simpleitem=0x7f030003;
     }
     public static final class menu {
         public static final int activity_main=0x7f060000;

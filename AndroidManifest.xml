@@ -24,5 +24,11 @@
             android:name=".InGameActivity" 
             android:screenOrientation="landscape" >
         </activity>
+        <activity 
+            android:name=".ActivityPopUp"
+            android:screenOrientation="landscape"
+            android:theme="@android:style/Theme.DeviceDefault.Light.Dialog" >
+            
+        </activity>
     </application>
 </manifest>
