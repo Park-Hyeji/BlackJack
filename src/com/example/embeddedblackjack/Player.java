@@ -14,8 +14,7 @@ public class Player {
 	boolean bust = false;
 	boolean insurance = false;
 	boolean Even_money = false;
-	boolean hasAce;
-	
+
 	ArrayList Card = new ArrayList<String>(); //받은 카드 저장
 	ArrayList Splited =  new ArrayList<String>(); //Spilted된 카드 저장
 	ArrayList score_board = new ArrayList<Integer>();
@@ -45,7 +44,7 @@ public class Player {
 		
 		if(score > 21)
 		{
-			hasAce = false;
+			boolean hasAce = false;
 			int AceIndex = 0;
 			for(int i=0; i < nth_card; i++)
 			{
