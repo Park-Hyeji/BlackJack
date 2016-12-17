@@ -17,7 +17,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 public class InGameActivity extends Activity{
-	/*new*/
+	/*Item추가 버전*/
 	ArrayList<Player> p_list = new ArrayList<Player>(); 
 	ArrayList<Ai> Ai_list = new ArrayList<Ai>();
 	ArrayList<Player> remain_p_list = new ArrayList<Player>(); 
