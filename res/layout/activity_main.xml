@@ -1,0 +1,166 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#1e681a" >
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+	    android:layout_height="wrap_content"
+	    android:orientation="horizontal" >
+        <TextView
+	        android:id="@+id/textView1"
+	        android:layout_width="wrap_content"
+	        android:layout_height="wrap_content"
+	        android:layout_marginLeft="85dp"
+	        android:layout_marginTop="68dp"
+	        android:text="플레이어 수 :"
+	        android:textColor="#ffffff" />
+        
+        <RadioGroup
+	        android:id="@+id/playerCnt"
+	        android:layout_width="wrap_content"
+	        android:layout_height="wrap_content"
+	        android:layout_marginLeft="20dp"
+	        android:layout_marginTop="55dp"
+	        android:orientation="horizontal" >
+
+            <RadioButton
+	            android:id="@+id/onePlayer"
+	            android:layout_width="wrap_content"
+	            android:layout_height="wrap_content"
+	            android:checked="true"
+	            android:text="1명" />
+            
+	        <RadioButton
+	            android:id="@+id/twoPlayer"
+	            android:layout_width="wrap_content"
+	            android:layout_height="wrap_content"
+	            android:text="2명" />
+	
+	        <RadioButton
+	            android:id="@+id/threePlayer"
+	            android:layout_width="wrap_content"
+	            android:layout_height="wrap_content"
+	            android:text="3명" />
+	    </RadioGroup>   
+	    
+    </LinearLayout>
+    
+	<LinearLayout
+        android:layout_width="wrap_content"
+	    android:layout_height="wrap_content"
+	    android:orientation="horizontal" >
+       	<TextView
+	        android:id="@+id/textView2"
+	        android:layout_width="wrap_content"
+	        android:layout_height="wrap_content"
+	        android:layout_marginTop="15dp"
+	        android:layout_marginLeft="85dp"
+	        android:text="AI 수 : "
+	        android:textColor="#ffffff" />
+       	
+       	<RadioGroup
+	        android:id="@+id/aiCnt"
+	        android:layout_width="wrap_content"
+	        android:layout_height="wrap_content"
+	        android:layout_marginLeft="20dp"
+	        android:layout_marginTop="5dp"
+	        android:orientation="horizontal" >
+
+       	    <RadioButton
+	            android:id="@+id/oneAI"
+	            android:layout_width="wrap_content"
+	            android:layout_height="wrap_content"
+	            android:checked="true"
+	            android:text="1명" />
+       	    
+	        <RadioButton
+	            android:id="@+id/twoAI"
+	            android:layout_width="wrap_content"
+	            android:layout_height="wrap_content"
+	            android:text="2명" />
+	
+	        <RadioButton
+	            android:id="@+id/threeAI"
+	            android:layout_width="wrap_content"
+	            android:layout_height="wrap_content"
+	            android:text="3명" />
+	        
+	        <RadioButton
+	            android:id="@+id/fourAI"
+	            android:layout_width="wrap_content"
+	            android:layout_height="wrap_content"
+	            android:text="4명" />
+	    </RadioGroup>   
+    </LinearLayout>
+    
+    <LinearLayout
+        android:layout_width="wrap_content"
+	    android:layout_height="wrap_content"
+	    android:orientation="horizontal" >
+       <TextView
+	        android:id="@+id/textView3"
+	        android:layout_width="wrap_content"
+	        android:layout_height="wrap_content"
+	        android:layout_alignLeft="@+id/textView2"
+	        android:layout_below="@+id/textView2"
+	        android:layout_marginTop="15dp"
+	        android:layout_marginLeft="85dp"
+	        android:textColor="#ffffff"
+	        android:text="게임 난이도" />
+		
+		<RadioGroup
+	        android:id="@+id/levelCnt"
+	        android:layout_width="wrap_content"
+	        android:layout_height="wrap_content"
+	        android:layout_marginLeft="15dp"
+	        android:layout_marginTop="5dp"
+	        android:layout_toRightOf="@+id/gameStartBtn"
+	        android:orientation="horizontal" >
+	
+	        <RadioButton
+	            android:id="@+id/oneDeck"
+	            android:layout_width="wrap_content"
+	            android:layout_height="wrap_content"
+	            android:checked="true"
+	            android:text="1덱" />
+	
+	        <RadioButton
+	            android:id="@+id/twoDeck"
+	            android:layout_width="wrap_content"
+	            android:layout_height="wrap_content"
+	            android:text="2덱" />
+	
+	        <RadioButton
+	            android:id="@+id/fourDeck"
+	            android:layout_width="wrap_content"
+	            android:layout_height="wrap_content"
+	            android:text="4덱" />
+	
+	        <RadioButton
+	            android:id="@+id/sixDeck"
+	            android:layout_width="wrap_content"
+	            android:layout_height="wrap_content"
+	            android:text="6덱" />
+	    </RadioGroup>   
+    </LinearLayout>
+	
+	<LinearLayout
+	    android:layout_width="wrap_content"
+	    android:layout_height="wrap_content"
+	    android:orientation="horizontal" >
+
+	    <Button
+	        android:id="@+id/gameStartBtn"
+	        android:layout_width="200dp"
+	        android:layout_height="wrap_content"
+	        android:layout_alignLeft="@+id/textView3"
+	        android:layout_below="@+id/textView3"
+	        android:layout_marginLeft="120dp"
+	        android:layout_marginTop="14dp"
+	        android:text="게임 시작" />
+	</LinearLayout>
+	
+</LinearLayout>
