@@ -25,15 +25,13 @@ public class InGameActivity extends Activity{
 	ArrayList<Player> remain_p_list = new ArrayList<Player>(); 
 	ArrayList<Ai> remain_Ai_list = new ArrayList<Ai>();
 	
-	Item item = new Item();
-	
 	Player Me,p1,p2,p3; //플레이어 
 	Ai ai1, ai2, ai3, ai4; //Ai
 	final Dealer dealer = new Dealer(); //딜러 생성
 	
 	Deck deck; //덱 생성
 	
-	int levelCnt;
+    
     @Override
     public void onCreate (Bundle savedInstanceState){
         super.onCreate(savedInstanceState);
@@ -45,6 +43,7 @@ public class InGameActivity extends Activity{
         final TextView total_money = (TextView)findViewById(R.id.cashNum); //전체 보유 금액 Text View
         final TextView bet_money = (TextView)findViewById(R.id.betNum); //배팅금액 Text View
         final TextView cardAndItem = (TextView)findViewById(R.id.cardAndItem); //카드랑 아이템 보여주는 Text View
+        final TextView Score_board = (TextView)findViewById(R.id.splitView1); //플레이어 점수 판
         final TextView Split_Card = (TextView)findViewById(R.id.splitCardSaveArea); //Split되어 플레이 대기 중인 카드
         
         final TextView Score_board1 = (TextView)findViewById(R.id.splitView1); //플레이어1 점수 판
@@ -62,7 +61,7 @@ public class InGameActivity extends Activity{
     	final Button stayBtn = (Button)findViewById(R.id.Stay);
     	final Button splitBtn = (Button)findViewById(R.id.Split);
     	final Button doubleBtn = (Button)findViewById(R.id.Double);
-
+    	
     	final Button chip_1 = (Button)findViewById(R.id.chip_1);
     	final Button chip_5 = (Button)findViewById(R.id.chip_5);
     	final Button chip_20 = (Button)findViewById(R.id.chip_20);
@@ -76,12 +75,12 @@ public class InGameActivity extends Activity{
     	stayBtn.setEnabled(false);
     	splitBtn.setEnabled(false);
     	doubleBtn.setEnabled(false);
-
+        
     	//설정값 받아오기
         Intent intent = getIntent();
         final int playerCnt = intent.getIntExtra("playerCnt",0);
         final int aiCnt = intent.getIntExtra("aiCnt",0);
-        levelCnt = intent.getIntExtra("levelCnt",0);
+        final int levelCnt = intent.getIntExtra("levelCnt",0);
        
         int total_player = 0;
         total_player = playerCnt + aiCnt;
@@ -220,17 +219,12 @@ public class InGameActivity extends Activity{
 			    	stayBtn.setEnabled(true);
 			    	splitBtn.setEnabled(true);
 			    	doubleBtn.setEnabled(true);
-					init();	
-					
-					//이번 게임에서 이 카드 얻으면 이 아이템 얻음 표시
-			    	String cardName = item.nowCard();
-			    	String itemName = item.nowItem();
-			    	cardAndItem.setText("'"+cardName+"' 카드 획득시 \n '"+itemName+"' 얻음");
-			    	
+			    	init();	
 			    	String Df_card = (String)dealer.Card.get(0);
 			    	
 			    	if(Df_card.charAt(1) == 'A'||Df_card.charAt(1) == 'J'|| Df_card.charAt(1) == 'Q'|| Df_card.charAt(1) == 'K')
 			    	{}
+									
 			    }
 				else{Toast.makeText(getApplicationContext(), "배팅을 해야 게임이 가능합니다.", Toast.LENGTH_LONG).show();}}
 		});
@@ -312,9 +306,8 @@ public class InGameActivity extends Activity{
         			stayBtn.setEnabled(false);
         			splitBtn.setEnabled(false);
         			doubleBtn.setEnabled(false);
-        		}
-    		}
-		});
+
+        		}}});
         splitBtn.setOnClickListener(new Button.OnClickListener()
         { 
         	public void onClick(View arg0) {
