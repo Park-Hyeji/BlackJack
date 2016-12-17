@@ -181,7 +181,7 @@
             android:layout_marginLeft="30dp"
             android:layout_marginRight="40dp"
             android:gravity="right"
-            android:text="Split : count"
+            android:text="Score Board"
             android:textColor="#ffffff"
             />
         <TextView 
@@ -192,7 +192,7 @@
             android:layout_marginTop="20dp"
             android:layout_marginRight="45dp"
             android:gravity="right"
-            android:text="Split : count"
+            android:text="Score board"
             android:textColor="#ffffff"
             />
         <TextView 
