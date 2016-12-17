@@ -3,6 +3,7 @@ package com.example.embeddedblackjack;
 
 
 import java.util.ArrayList;
+import java.util.List;
 
 import android.widget.ArrayAdapter;
 
@@ -10,6 +11,7 @@ public class Player {
 	int total = 15000;
 	int bet = 0;
 	int nth_card = 0;
+	int nth_play = 0;
 	int score = 0;
 	boolean bust = false;
 	boolean insurance = false;
@@ -17,10 +19,14 @@ public class Player {
 
 	ArrayList Card = new ArrayList<String>(); //받은 카드 저장
 	ArrayList Splited =  new ArrayList<String>(); //Spilted된 카드 저장
+	ArrayList score_board = new ArrayList<Integer>();
+	//ArrayList Item_list = new ArrayList<Item>();
 	ArrayAdapter<String> adapter;
 	
 	void Ready(){
 	 	Card.clear();
+	 	Splited.clear();
+	 	score_board.clear();
 	 	nth_card = 0;
 	 	score = 0;
 	 	bust = false;
@@ -67,30 +73,32 @@ public class Player {
 			}
 		}
 	}
-		
+	void Stay(){score_board.add(score);}
 	void Bust(){
 		total = total - bet;
 		score = 0;
 		if(!Splited.isEmpty())
-		{
+		{nth_card = 0;
+		 Card.clear();
+		 Hit((String) Splited.get(0));
+		 Splited.remove(0);}
+		else 
+			bust = true;}
+	void Continue(){
+			score_board.add(score);
+			score = 0;
+			Card.clear();
 			nth_card = 0;
 		  	Card.clear();
 		  	Hit((String) Splited.get(0));
-		  	Splited.remove(0);
-		}
-		else 
-			bust = true;
-	}
-	
-	void Stay(){}
-	
+		  	Splited.remove(0);}
 	void Split(){
 		if(Card.size() == 2)
 		{
-			String c1 = (String) Card.get(0);
-			String c2 = (String) Card.get(1);
+			String c1 = (String)Card.get(0);
+			String c2 = (String)Card.get(1);
 		
-			if(c1.charAt(1) == c2.charAt(1) || c1.charAt(1) == 'a' && c2.charAt(1) == 'A')
+			if(c1.charAt(1) == c2.charAt(1))
 			{
 				Splited.add(Card.get(1));
 				score /= 2;
@@ -100,7 +108,6 @@ public class Player {
 			if(c1.charAt(1) == 'a' && c2.charAt(1) == 'A')
 			{
 				Splited.add(Card.get(1));
-			
 				String Temp = (String)Card.get(0);
 				Temp = Temp.replaceAll("a", "A");
 				Card.remove(0);
@@ -112,4 +119,5 @@ public class Player {
 			}
 		}
 	}
+	void Double_down(){}
 }
