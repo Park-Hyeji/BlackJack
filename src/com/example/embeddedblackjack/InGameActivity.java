@@ -259,16 +259,19 @@ public class InGameActivity extends Activity{
         {
         	public void onClick(View arg0) 
         	{
+    			
         		if(!Me.Splited.isEmpty())
         		{
         			Me.Continue();
         			Me.adapter.notifyDataSetChanged();
-        			String score_temp = (String)Me.score_board.get(0);
+        			
+        			String score_temp = (String)Score_board.getText();
+        			String score_temp2 = Me.score_board.get(Me.score_board.size()-1).toString();
+        			Score_board.setText(score_temp + " " + score_temp2);
+        			
         			String temp = (String) Split_Card.getText();
-        			String temp2;
         			temp = temp.replaceAll((String)Me.Card.get(0), "");
         			temp = temp.replaceAll(" ", "");
-        			Toast.makeText(getApplicationContext(), temp, Toast.LENGTH_LONG).show();
         			Split_Card.setText(temp);
         		}
         		else
