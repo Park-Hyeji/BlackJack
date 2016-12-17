@@ -4,6 +4,8 @@ import java.util.ArrayList;
 
 import com.example.embeddedblackjack.R;
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
@@ -23,15 +25,14 @@ public class InGameActivity extends Activity{
 	ArrayList<Player> remain_p_list = new ArrayList<Player>(); 
 	ArrayList<Ai> remain_Ai_list = new ArrayList<Ai>();
 	
-	Item item = new Item();
-	
 	Player Me,p1,p2,p3; //플레이어 
 	Ai ai1, ai2, ai3, ai4; //Ai
 	final Dealer dealer = new Dealer(); //딜러 생성
 	
 	Deck deck; //덱 생성
 	
-	int levelCnt;
+	Item item = new Item();
+    
     @Override
     public void onCreate (Bundle savedInstanceState){
         super.onCreate(savedInstanceState);
@@ -46,12 +47,22 @@ public class InGameActivity extends Activity{
         final TextView Score_board = (TextView)findViewById(R.id.splitView1); //플레이어 점수 판
         final TextView Split_Card = (TextView)findViewById(R.id.splitCardSaveArea); //Split되어 플레이 대기 중인 카드
         
+        final TextView Score_board1 = (TextView)findViewById(R.id.splitView1); //플레이어1 점수 판
+        final TextView Score_board2 = (TextView)findViewById(R.id.splitView2); //플레이어2 점수 판
+        final TextView Score_board3 = (TextView)findViewById(R.id.splitView3); //플레이어3 점수 판
+        final TextView Score_board4 = (TextView)findViewById(R.id.splitView4); //플레이어4 점수 판
+        final TextView Score_board5 = (TextView)findViewById(R.id.splitView5); //플레이어5 점수 판
+        final TextView Score_board6 = (TextView)findViewById(R.id.splitView6); //플레이어6 점수 판
+        final TextView Score_board_dealer = (TextView)findViewById(R.id.splitViewdealer); //딜러 점수 판
+        
+        ArrayList T_list = new ArrayList<TextView>();
+        
         //Button(버튼)
     	final Button hitBtn = (Button)findViewById(R.id.hit);
     	final Button stayBtn = (Button)findViewById(R.id.Stay);
     	final Button splitBtn = (Button)findViewById(R.id.Split);
     	final Button doubleBtn = (Button)findViewById(R.id.Double);
-
+    	
     	final Button chip_1 = (Button)findViewById(R.id.chip_1);
     	final Button chip_5 = (Button)findViewById(R.id.chip_5);
     	final Button chip_20 = (Button)findViewById(R.id.chip_20);
@@ -65,12 +76,12 @@ public class InGameActivity extends Activity{
     	stayBtn.setEnabled(false);
     	splitBtn.setEnabled(false);
     	doubleBtn.setEnabled(false);
-
+        
     	//설정값 받아오기
         Intent intent = getIntent();
         final int playerCnt = intent.getIntExtra("playerCnt",0);
         final int aiCnt = intent.getIntExtra("aiCnt",0);
-        levelCnt = intent.getIntExtra("levelCnt",0);
+        final int levelCnt = intent.getIntExtra("levelCnt",0);
        
         int total_player = 0;
         total_player = playerCnt + aiCnt;
@@ -80,14 +91,17 @@ public class InGameActivity extends Activity{
         ListView spot3 = (ListView)findViewById(R.id.player3);
         ListView spot4 = (ListView)findViewById(R.id.player4);
         ListView spot5 = (ListView)findViewById(R.id.player5);
-        ListView spot6 = (ListView)findViewById(R.id.player6);
-        
+        ListView spot6 = (ListView)findViewById(R.id.player6);        
         ListView spot7 = (ListView)findViewById(R.id.dealer);
 
-        if(total_player < 6){spot6.setVisibility(View.GONE);}
-        if(total_player < 5){spot5.setVisibility(View.GONE);}
-        if(total_player < 4){spot4.setVisibility(View.GONE);}
-        if(total_player < 3){spot3.setVisibility(View.GONE);}
+        if(total_player < 6){spot6.setVisibility(View.GONE);
+        					 Score_board6.setVisibility(View.GONE);}
+        if(total_player < 5){spot5.setVisibility(View.GONE);
+        					 Score_board5.setVisibility(View.GONE);}
+        if(total_player < 4){spot4.setVisibility(View.GONE);
+        					 Score_board4.setVisibility(View.GONE);}
+        if(total_player < 3){spot3.setVisibility(View.GONE);
+        					 Score_board3.setVisibility(View.GONE);}
         
         //Player 숫자 선택에 따른 Player 생성
         if(playerCnt >= 1){p1 = new Player(); p_list.add(p1);} //플레이어1 생성
@@ -128,7 +142,9 @@ public class InGameActivity extends Activity{
         deck = new Deck(levelCnt);
     	deck.Shuffle();	
     	deck.Card_Shuffled[0] = "♠A";
-    	deck.Card_Shuffled[3] = "♠A";
+    	deck.Card_Shuffled[2] = "◆A";
+    	deck.Card_Shuffled[3] = "◆A";
+    	deck.Card_Shuffled[6] = "♥A";
     	
     	Me = p1; //본인 할당
      	Me.adapter = new ArrayAdapter<String>(this,R.layout.simpleitem, Me.Card);
@@ -204,23 +220,22 @@ public class InGameActivity extends Activity{
 			    	stayBtn.setEnabled(true);
 			    	splitBtn.setEnabled(true);
 			    	doubleBtn.setEnabled(true);
-					init();	
-					
-					//이번 게임에서 이 카드 얻으면 이 아이템 얻음 표시
+			    	init();	
+			    	String Df_card = (String)dealer.Card.get(0);
+			    	
+			    	//이번 게임에서 이 카드 얻으면 이 아이템 얻음 표시
 			    	String cardName = item.nowCard();
 			    	String itemName = item.nowItem();
 			    	cardAndItem.setText("'"+cardName+"' 카드 획득시 \n '"+itemName+"' 얻음");
 			    	
-			    	//if(){
-			    		//유저가 딜러 패 훔쳐보기 아이템을 얻고 이 아이템을 사용하였을 시,
-			    		//String dealerTwo = item.peek(dealer);
-				        //Toast.makeText(getApplicationContext(), "딜러의 두 번째 카드는 '"+dealerTwo+"' 입니다.", Toast.LENGTH_LONG).show();
-			    	//}					
+			    	
+			    	if(Df_card.charAt(1) == 'A'||Df_card.charAt(1) == 'J'|| Df_card.charAt(1) == 'Q'|| Df_card.charAt(1) == 'K')
+			    	{}
+									
 			    }
 				else{Toast.makeText(getApplicationContext(), "배팅을 해야 게임이 가능합니다.", Toast.LENGTH_LONG).show();}}
 		});
-        
-		hitBtn.setOnClickListener(new Button.OnClickListener(){
+ 		hitBtn.setOnClickListener(new Button.OnClickListener(){
 			public void onClick(View arg0) {
 				// TODO Auto-generated method stub
 				Me.Hit(deck.distribute_card());
@@ -244,7 +259,6 @@ public class InGameActivity extends Activity{
 			    	stayBtn.setEnabled(false);
 			    	splitBtn.setEnabled(false);
 			    	doubleBtn.setEnabled(false);
-			  
 			    	}
 				else
 					{
@@ -258,17 +272,17 @@ public class InGameActivity extends Activity{
 		});
 		stayBtn.setOnClickListener(new Button.OnClickListener()
         {
-        	public void onClick(View arg0) 
+			public void onClick(View arg0) 
         	{
-    			
         		if(!Me.Splited.isEmpty())
         		{
         			Me.Continue();
         			Me.adapter.notifyDataSetChanged();
         			
-        			String score_temp = (String)Score_board.getText();
+        			String score_temp = (String)Score_board1.getText();
+        			score_temp = score_temp.replaceAll("ScoreBoard","");
         			String score_temp2 = Me.score_board.get(Me.score_board.size()-1).toString();
-        			Score_board.setText(score_temp + " " + score_temp2);
+        			Score_board1.setText(score_temp + " " + score_temp2);
         			
         			String temp = (String) Split_Card.getText();
         			temp = temp.replaceAll((String)Me.Card.get(0), "");
@@ -278,6 +292,72 @@ public class InGameActivity extends Activity{
         		else
         		{
         			Me.Stay();
+        			String score_temp = (String)Score_board1.getText();
+        			score_temp = score_temp.replaceAll("ScoreBoard","");
+        			String score_temp2 = Me.score_board.get(Me.score_board.size()-1).toString();
+        			Score_board1.setText(score_temp + " " + score_temp2);
+        			for(int i=0; i<Ai_list.size(); i++)
+        			{Ai_turn(Ai_list.get(i));}
+        			Dealer_turn();
+        			total_money.setText(Integer.toString(Me.total));
+        			bet_money.setText(Integer.toString(Me.bet));
+        	 	
+        			chip_1.setEnabled(true);
+        			chip_5.setEnabled(true);
+        			chip_20.setEnabled(true);
+        			chip_100.setEnabled(true);
+        			chip_500.setEnabled(true);
+        			gameStartBtn.setEnabled(true);
+				
+        			hitBtn.setEnabled(false);
+        			stayBtn.setEnabled(false);
+        			splitBtn.setEnabled(false);
+        			doubleBtn.setEnabled(false);
+
+        		}}});
+        splitBtn.setOnClickListener(new Button.OnClickListener()
+        { 
+        	public void onClick(View arg0) {
+        	// TODO Auto-generated method stub
+        		if(Me.Card.size() == 2)
+        		{Me.Split();
+        		Me.adapter.notifyDataSetChanged();
+        		
+        		String temp = (String) Split_Card.getText();
+        		String temp2 = (String) Me.Splited.get(Me.Splited.size()-1);
+        		Split_Card.setText(temp + ",  " + temp2);}
+			}
+        });
+        doubleBtn.setOnClickListener(new Button.OnClickListener()
+        {
+			public void onClick(View arg0) {
+				// TODO Auto-generated method stub
+				Me.Double_down[Me.score_board.size()] = true;
+				Me.Hit(deck.distribute_card());
+				Me.adapter.notifyDataSetChanged();
+				
+				if(!Me.Splited.isEmpty())
+        		{
+        			Me.Continue();
+        			Me.adapter.notifyDataSetChanged();
+        			
+        			String score_temp = (String)Score_board1.getText();
+        			score_temp = score_temp.replaceAll("ScoreBoard","");
+        			String score_temp2 = Me.score_board.get(Me.score_board.size()-1).toString();
+        			Score_board1.setText(score_temp + " " + score_temp2);
+        			
+        			String temp = (String) Split_Card.getText();
+        			temp = temp.replaceAll((String)Me.Card.get(0), "");
+        			temp = temp.replaceAll(" ", "");
+        			Split_Card.setText(temp);
+        		}
+        		else
+        		{
+        			Me.Stay();
+        			String score_temp = (String)Score_board1.getText();
+        			score_temp = score_temp.replaceAll("ScoreBoard","");
+        			String score_temp2 = Me.score_board.get(Me.score_board.size()-1).toString();
+        			Score_board1.setText(score_temp + " " + score_temp2);
         			for(int i=0; i<Ai_list.size(); i++)
         			{Ai_turn(Ai_list.get(i));}
         			Dealer_turn();
@@ -296,30 +376,9 @@ public class InGameActivity extends Activity{
         			splitBtn.setEnabled(false);
         			doubleBtn.setEnabled(false);
         		}
-    		}
-		});
-        splitBtn.setOnClickListener(new Button.OnClickListener()
-        { 
-        	public void onClick(View arg0) {
-        	// TODO Auto-generated method stub
-        		Me.Split();
-        		Me.adapter.notifyDataSetChanged();
-        		String temp = (String) Split_Card.getText();
-        		String temp2 = (String) Me.Splited.get(0);
-        		Split_Card.setText(temp + " " + temp2);
-			}
+			}	
         });
-        doubleBtn.setOnClickListener(new Button.OnClickListener()
-        {
-			public void onClick(View arg0) {
-				// TODO Auto-generated method stub
-				Me.bet *= 2;
-				Me.Hit(deck.distribute_card());
-				Me.adapter.notifyDataSetChanged();
-			}
-        });
-    }
-    
+    }    
     void init(){
 			Toast.makeText(getApplicationContext(), "게임이 시작됩니다.", Toast.LENGTH_LONG).show();
 			//모든 플레이어 및 Ai 준비
@@ -407,14 +466,23 @@ public class InGameActivity extends Activity{
     	
     	if(!Me.bust)
     	{
-    		while(!Me.score_board.isEmpty())
-    		{
-    			int score = (Integer) Me.score_board.get(0);
+    		for(int i=0; i<Me.score_board.size(); i++)
+    		{int score = (Integer) Me.score_board.get(i);
+    				
     			if(score > dealer.score)
-    				Me.total = Me.total + Me.bet;
+    			{
+    				if(Me.Double_down[i])
+    					Me.total = Me.total + (2*Me.bet);
+    				else
+    					Me.total = Me.total + Me.bet;
+    			}
     			if(score < dealer.score)
-    				Me.total = Me.total - Me.bet;
-    			Me.score_board.remove(0);
+    			{
+    				if(Me.Double_down[i])
+    					Me.total = Me.total - (2*Me.bet);
+    				else
+    					Me.total = Me.total - Me.bet;
+    			}
     		}
     	}
     	for(int i=0; i<Ai_list.size(); i++)
@@ -426,6 +494,8 @@ public class InGameActivity extends Activity{
     	}
     	Me.bet = 0;
     }
+    void Set_View(TextView v)
+    {v.setText("ScoreBoard");}
 
 }
         

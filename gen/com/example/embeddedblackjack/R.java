@@ -60,7 +60,7 @@ public final class R {
         public static final int splitView4=0x7f07000d;
         public static final int splitView5=0x7f07000e;
         public static final int splitView6=0x7f07000f;
-        public static final int textView=0x7f070005;
+        public static final int splitViewdealer=0x7f070005;
         public static final int textView1=0x7f070000;
         public static final int textView2=0x7f070024;
         public static final int textView3=0x7f07002a;

@@ -9,16 +9,18 @@ public class Player {
 	int total = 15000;
 	int bet = 0;
 	int nth_card = 0;
-	int nth_play = 0;
 	int score = 0;
+	int insurance_bet = 0;
 	boolean bust = false;
 	boolean insurance = false;
 	boolean Even_money = false;
 	boolean hasAce;
-	
+
 	ArrayList Card = new ArrayList<String>(); //받은 카드 저장
 	ArrayList Splited =  new ArrayList<String>(); //Spilted된 카드 저장
 	ArrayList score_board = new ArrayList<Integer>();
+	boolean Double_down[] = new boolean[15];
+	
 	//ArrayList Item_list = new ArrayList<Item>();
 	ArrayAdapter<String> adapter;
 	
@@ -31,6 +33,8 @@ public class Player {
 	 	bust = false;
 		insurance = false;
 		Even_money = false;
+		for(int i=0; i<10; i++)
+			Double_down[i] = false;
 	}
 	void Hit(String card){
 		nth_card++;
@@ -92,8 +96,6 @@ public class Player {
 		  	Hit((String) Splited.get(0));
 		  	Splited.remove(0);}
 	void Split(){
-		if(Card.size() == 2)
-		{
 			String c1 = (String)Card.get(0);
 			String c2 = (String)Card.get(1);
 		
@@ -117,6 +119,5 @@ public class Player {
 				nth_card--;
 			}
 		}
-	}
 	void Double_down(){}
 }
