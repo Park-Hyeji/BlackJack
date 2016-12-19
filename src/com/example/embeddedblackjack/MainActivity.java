@@ -64,6 +64,7 @@ public class MainActivity extends Activity implements OnCheckedChangeListener{
 					 intent.putExtra("playerCnt", n_player); //플레이어 수 전달			
 					 intent.putExtra("aiCnt", n_ai); //ai수 전달
 					 intent.putExtra("levelCnt", n_deck); //레벨 값 전달
+					 intent.putExtra("nickName", nickName.getText().toString());//닉네임 전달
 					 startActivity(intent);
 					 finish();
 				}

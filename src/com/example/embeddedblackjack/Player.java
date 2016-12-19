@@ -134,5 +134,15 @@ public class Player {
 			}
 		}
 	void Double_down(){}
+	void insurance_yes(int insuranceMoney){
+		total -= bet;
+		total += insuranceMoney;
+	}
+	void insurance_no(int insuranceMoney){
+		total -= insuranceMoney;
+	}
+	void evenmoney_yes(){
+		total += bet;
+	}
 
 }

@@ -165,4 +165,47 @@ Java_com_example_embeddedblackjack_InGameActivity_PiezoControl( JNIEnv* env,
   	
 	return -1;
 }
+jint
+Java_com_example_embeddedblackjack_InGameActivity_DotMatrixControl(JNIEnv* env, jobject thiz, jstring data)
+{
+	const char *buf; 
+	int dev,ret, len;
+	char str[100];
 
+	buf = (*env)->GetStringUTFChars(env, data, 0);
+	len = (*env)->GetStringLength(env, data);
+	
+	dev = open("/dev/dotmatrix", O_RDWR | O_SYNC);
+
+	if(dev != -1) {
+		ret = write(dev, buf, len);
+		close(dev);
+	}
+	return 0;
+}
+jint
+Java_com_example_embeddedblackjack_InGameActivity_FLEDControl(JNIEnv* env, jobject thiz, jint val)
+{	
+	int fd,ret;
+	int led[8] = {1, 2, 3, 4, 5, 6, 7, 8}; //hit,stay,split,double,evenmoney,insurance,win,loose
+	char buf[1];
+	int index = 0;
+	int i = 0;
+	fd = open("/dev/fullcolorled",O_WRONLY);
+	if (fd < 0) 
+	{
+		return -errno;
+	}
+	for(i=0; i<8; i++){
+		if(val == led[i])
+			index = led[i];
+	}
+
+	buf[0] = index;
+	
+	write(fd,buf,1);
+
+	close(fd);
+	return ret;
+
+}

@@ -22,6 +22,7 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -40,6 +41,7 @@ public class InGameActivity extends Activity{
 	Button chip_1, chip_5, chip_20 ,chip_100, chip_500;
 	Button gameStartBtn, hitBtn, stayBtn, doubleBtn, splitBtn;
 	/////플레이에 관련 변수들/////////////
+	String nickName;
 	int playerCnt = 0;
 	int aiCnt = 0;
 	int levelCnt = 0;
@@ -47,6 +49,14 @@ public class InGameActivity extends Activity{
 	int pretotal; 
 	int n_c_ready = 0;
 	int num_game = 0;
+	int playerWin = 0;//플레이어가 이겼는지 졌는지 이기면 1, 지면2
+	boolean hitBtnClicked = false;
+	boolean stayBtnClicked = false;
+	boolean splitBtnClicked = false;
+	boolean doubleBtnClicked = false;
+	boolean evenmoneyBtnClicked = false;
+	boolean insuranceBtnClicked = false;
+	int insuranceMoney = 0;
 	
 	ArrayList<Ai> Ai_list = new ArrayList<Ai>();
 	ArrayList<Player> c_list = new ArrayList<Player>();
@@ -82,6 +92,15 @@ public class InGameActivity extends Activity{
 	public native int IOCtlClear();
 	String Text1="      RSP    ";
 	String Text2="game start";
+	
+	//DotMatrix
+	DotMatrixThread dmthread = new DotMatrixThread();
+	protected static final int DOT_DIALOG_SIMPLE_MESSAGE = 0;
+	protected static final int DOT_DIALOG_ERROR_MESSAGE = 1;
+	String result = new String();
+	Handler handler = new Handler();
+	
+	public native int DotMatrixControl(String data);
 	
 	//Piezo
 	PiezoThread piezo = new PiezoThread();
@@ -122,6 +141,10 @@ public class InGameActivity extends Activity{
 	
 	public native int PiezoControl(int value);	// JNI Interface
 
+	//Full color LED
+    //HIT-LED1빨간색, STAY-LED2주황색, DOUBLE-LED3노란색, SPLIT-LED4초록색, EVENMONEY-all파란색, INSURANCE-all보라색, WIN-all핑크색, LOOSE-all검은색
+    public native int FLEDControl(int val);
+
     @Override
     public void onCreate (Bundle savedInstanceState){
         super.onCreate(savedInstanceState);
@@ -132,6 +155,7 @@ public class InGameActivity extends Activity{
         playerCnt = intent.getIntExtra("playerCnt",0); //필요 참가자 수
         aiCnt = intent.getIntExtra("aiCnt",0); //Ai 숫자
         levelCnt = intent.getIntExtra("levelCnt",0); //덱 수
+        nickName = intent.getStringExtra("nickName"); //닉네임
         
     	//TextView(텍스트 뷰)
     	final TextView deckNum = (TextView)findViewById(R.id.deckNum); //Deck의 갯수 표시 Text View
@@ -237,6 +261,9 @@ public class InGameActivity extends Activity{
 		PiezoControl(PiezoData);
 		piezo.start();
 
+		dmthread.setDaemon(true);
+        dmthread.start();
+		
 		ap.setDaemon(true);
         dp.setDaemon(true);                
         ap.start();
@@ -294,6 +321,11 @@ public class InGameActivity extends Activity{
      	//게임조작 버튼 부분
         gameStartBtn.setOnClickListener(new Button.OnClickListener(){
 			public void onClick(View arg0) {
+				//말할 수 없는 비밀
+				//music = 5;
+				//index = 0;
+				//musicOne = 0;
+				playerWin = 0; //알 수 없
 				num_game++;
 				if(Me.bet != 0)
 				{
@@ -324,6 +356,8 @@ public class InGameActivity extends Activity{
  		hitBtn.setOnClickListener(new Button.OnClickListener(){
 			public void onClick(View arg0) {
 				// TODO Auto-generated method stub
+				FLEDControl(1);
+				hitBtnClicked = true;
 				Me.Hit(deck.distribute_card());				
 				Me.adapter.notifyDataSetChanged();
 				if(Me.score == 21) Me.BlackJack = true;
@@ -342,7 +376,9 @@ public class InGameActivity extends Activity{
 		stayBtn.setOnClickListener(new Button.OnClickListener()
         {
 			public void onClick(View arg0) 
-        	{
+        	{ 
+				FLEDControl(2);
+				stayBtnClicked = true;
         		if(!Me.Splited.isEmpty())
         		{
         			Me.Continue();
@@ -367,6 +403,8 @@ public class InGameActivity extends Activity{
         { 
         	public void onClick(View arg0) {
         	// TODO Auto-generated method stub
+        		FLEDControl(3);
+        		splitBtnClicked = true;
         		if(Me.Card.size() == 2)
         		{Me.Split();
         		Me.adapter.notifyDataSetChanged();
@@ -380,6 +418,8 @@ public class InGameActivity extends Activity{
         {
 			public void onClick(View arg0) {
 				// TODO Auto-generated method stub
+				FLEDControl(4);
+				doubleBtnClicked = true;
 				Me.Double_down[Me.score_board.size()] = true;
 				Me.Hit(deck.distribute_card());
 				Me.adapter.notifyDataSetChanged();
@@ -481,7 +521,7 @@ public class InGameActivity extends Activity{
 	    	////////////////////////////////////////////////
 	    	
 	    	//BlackJack 확인/////////////////////////////////
-	    	if(Me.score == 21) {Me.BlackJack = true; music = 2; musicOne = 0; index = 0;}
+	    	if(Me.score == 21) {Me.BlackJack = true; playerWin = 1; FLEDControl(7); music = 6; musicOne = 0; index = 0;}
 	    	if(!c_list.isEmpty())
 			{for(int i=0; i< c_list.size(); i++)
 	    		{if(c_list.get(i).score == 21)
@@ -497,6 +537,69 @@ public class InGameActivity extends Activity{
 	    	if(dfc == 'A' || dfc == '1'|| dfc == 'J'||dfc == 'Q'||dfc == 'K')
 	    	{
 	    		//Insuracne, EvenMoney
+	    		//Insurance - 돈 걸기
+	    		if(Me.BlackJack == false){
+	    			AlertDialog.Builder alert= new AlertDialog.Builder(this);
+		    		alert.setTitle("Insurance");
+		    		alert.setMessage("Insurance 하시겠습니까?");
+		    		final EditText money = new EditText(this);
+		    		alert.setView(money);
+		    		
+		    		alert.setPositiveButton("ok", new DialogInterface.OnClickListener() {		
+						public void onClick(DialogInterface arg0, int arg1) {
+							// TODO Auto-generated method stub
+							String ins_mon = money.getText().toString();
+							//Toast.makeText(getApplicationContext(), ins_mon, Toast.LENGTH_LONG).show();
+							insuranceMoney = Integer.parseInt(ins_mon);
+							//상대가 블랙잭 건 돈을 잃고, 인슈어런스를 받음
+							if(dealer.BlackJack == true){
+								Me.insurance_yes(insuranceMoney);
+								total_money.setText(Integer.toString(Me.total));
+							}else{
+								//상대가 블랙잭이 아니면, 인슈어런스를 잃는다
+								Me.insurance_no(insuranceMoney);
+								total_money.setText(Integer.toString(Me.total));
+							}
+						}
+					}
+					);
+		    		
+		    		alert.setNegativeButton("no", new DialogInterface.OnClickListener() {
+						
+						public void onClick(DialogInterface arg0, int arg1) {
+							// TODO Auto-generated method stub
+							
+						}
+					});
+		    		alert.show();
+	    		}else{
+	    			//EvenMoney
+	    			AlertDialog.Builder alert= new AlertDialog.Builder(this);
+		    		alert.setTitle("Even Money");
+		    		alert.setMessage("Even Money");
+		    		
+		    		alert.setPositiveButton("ok", new DialogInterface.OnClickListener() {
+						
+						public void onClick(DialogInterface arg0, int arg1) {
+							// TODO Auto-generated method stub
+							//배팅 금액 그대로 받고 게임 끝
+							Me.evenmoney_yes();
+							Me.bust = true;
+							total_money.setText(Integer.toString(Me.total));
+						}
+					});
+		    		alert.setNegativeButton("no", new DialogInterface.OnClickListener() {
+						
+						public void onClick(DialogInterface arg0, int arg1) {
+							// TODO Auto-generated method stub
+							//게임 그대로
+						}
+					});
+		    		alert.show();
+	    		}
+	    		
+	    		
+	    		//EvenMoney - yes/no
 	    		dealer.Card.remove(1);
 	         	dealer.recieve(dealer.Unknown);
 	         	dealer.adapter.notifyDataSetChanged();
@@ -504,6 +607,8 @@ public class InGameActivity extends Activity{
 	         	if(dealer.score == 21)
 	         	{
 	         		dealer.BlackJack = true;
+	         		playerWin = 2; //플레이어 짐
+	         		//FLEDControl(8);
 	         		music = 1;
 	         		musicOne = 0;
 	         		index = 0;
@@ -828,6 +933,8 @@ class DealerPlay extends Thread{
     				music = 2;
     				musicOne = 0;
     				index = 0;
+    				playerWin = 1;
+    				FLEDControl(7);
     			}
     			if(score < dealer.score)
     			{
@@ -840,6 +947,8 @@ class DealerPlay extends Thread{
 					music = 1;
 					musicOne = 0;
 					index = 0;
+					playerWin = 2;
+					FLEDControl(8);
     				long[] pattern = {500, 200, 500, 200};
                 	mVibrator.vibrate(pattern, -1);
     			}
@@ -900,6 +1009,7 @@ class DealerPlay extends Thread{
 	class PiezoThread extends Thread{
 		public void run(){
 			while(Game_on){
+				/*피에조 시끄러
 				//게임이 실행중인 동안
 				if(music == 1 && musicOne == 0){
 					int noteDuration = 1000/duration1[index];
@@ -998,10 +1108,95 @@ class DealerPlay extends Thread{
 						musicOne = 1;
 					}
 				}
+				*/
 			}
 		}
 	}
-
+	class DotMatrixThread extends Thread{
+    	public void run(){
+    		while(Game_on){
+	    		//DotMatrix
+	    		//if(){
+	        	//	DotMatrixControl("xx"); //뿅뿅
+				//}else if(Me.BlackJack == true){
+	    		if(Me.BlackJack == true){
+	        		DotMatrixControl("yz{|"); //♥◇♣♤
+	        		hitBtnClicked = false;
+	        		stayBtnClicked = false;
+	        		splitBtnClicked = false;
+	        		doubleBtnClicked = false;
+	        		evenmoneyBtnClicked = false;
+	        		insuranceBtnClicked = false;
+				}else if(playerWin == 2){
+	        		DotMatrixControl("}}");
+	        		Me.BlackJack = false;
+	        		hitBtnClicked = false;
+	        		stayBtnClicked = false;
+	        		splitBtnClicked = false;
+	        		doubleBtnClicked = false;
+	        		evenmoneyBtnClicked = false;
+	        		insuranceBtnClicked = false;
+				}else if(playerWin == 1){
+	        		DotMatrixControl("~~");
+	        		Me.BlackJack = false;
+	        		hitBtnClicked = false;
+	        		stayBtnClicked = false;
+	        		splitBtnClicked = false;
+	        		doubleBtnClicked = false;
+	        		evenmoneyBtnClicked = false;
+	        		insuranceBtnClicked = false;
+				}else if(hitBtnClicked == true){
+					DotMatrixControl("HIT");
+					Me.BlackJack = false;
+	        		stayBtnClicked = false;
+	        		splitBtnClicked = false;
+	        		doubleBtnClicked = false;
+	        		evenmoneyBtnClicked = false;
+	        		insuranceBtnClicked = false;
+				}else if(stayBtnClicked == true){
+					DotMatrixControl("STAY");
+					Me.BlackJack = false;
+					hitBtnClicked = false;
+	        		splitBtnClicked = false;
+	        		doubleBtnClicked = false;
+	        		evenmoneyBtnClicked = false;
+	        		insuranceBtnClicked = false;
+				}else if(splitBtnClicked == true){
+					DotMatrixControl("SPLIT");
+					Me.BlackJack = false;
+					hitBtnClicked = false;
+	        		stayBtnClicked = false;
+	        		doubleBtnClicked = false;
+	        		evenmoneyBtnClicked = false;
+	        		insuranceBtnClicked = false;
+				}else if(doubleBtnClicked == true){
+					DotMatrixControl("DOUBLE");
+					Me.BlackJack = false;
+					hitBtnClicked = false;
+	        		stayBtnClicked = false;
+	        		splitBtnClicked = false;
+	        		evenmoneyBtnClicked = false;
+	        		insuranceBtnClicked = false;
+				}else if(evenmoneyBtnClicked == true){
+					DotMatrixControl("EVEN MONEY");
+					Me.BlackJack = false;
+					hitBtnClicked = false;
+	        		stayBtnClicked = false;
+	        		splitBtnClicked = false;
+	        		doubleBtnClicked = false;
+	        		insuranceBtnClicked = false;
+				}else if(insuranceBtnClicked == true){
+					DotMatrixControl("INSURANCE");
+					Me.BlackJack = false;
+					hitBtnClicked = false;
+	        		stayBtnClicked = false;
+	        		splitBtnClicked = false;
+	        		doubleBtnClicked = false;
+	        		evenmoneyBtnClicked = false;
+				}
+    		}
+    	}
+    }
 }
 
 
