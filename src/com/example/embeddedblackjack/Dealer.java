@@ -9,6 +9,7 @@ public class Dealer {
 	int nth_card = 0;
 	String Unknown;
 	boolean bust = false;
+	boolean BlackJack = false;
 	ArrayList Card = new ArrayList<String>(); //받은 카드 저장
 	ArrayAdapter<String> adapter;
 	
@@ -16,6 +17,7 @@ public class Dealer {
 	 	Card.clear();
 	 	nth_card = 0;
 	 	score = 0;
+	 	BlackJack = false;
 	 	bust = false;
 	}
 	void recieve(String card){

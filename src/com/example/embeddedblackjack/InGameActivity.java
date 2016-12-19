@@ -1,13 +1,21 @@
 package com.example.embeddedblackjack;
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.util.ArrayList;
 
 import com.example.embeddedblackjack.R;
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Vibrator;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
@@ -19,30 +27,116 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 public class InGameActivity extends Activity{
-	/*Item추가 버전*/
-	ArrayList<Player> p_list = new ArrayList<Player>(); 
+	/////서버-클라이언트 통신 관련 변수들/////
+	int p_joined = 1;
+	static final int Port = 5001; //5001번 포트 사용
+	ServerSocket serversocket = null; //서버 소켓
+	Socket socket = null; //소켓
+	Send_game_info info = new Send_game_info();
+	boolean AllConnected = true;
+	////////////////////////////////
+	/////UI 관련 변수들////////////////
+	TextView total_money, bet_money;
+	Button chip_1, chip_5, chip_20 ,chip_100, chip_500;
+	Button gameStartBtn, hitBtn, stayBtn, doubleBtn, splitBtn;
+	/////플레이에 관련 변수들/////////////
+	int playerCnt = 0;
+	int aiCnt = 0;
+	int levelCnt = 0;
+	int total_player = 0;
+	int pretotal; 
+	int n_c_ready = 0;
+	int num_game = 0;
+	
 	ArrayList<Ai> Ai_list = new ArrayList<Ai>();
-	ArrayList<Player> remain_p_list = new ArrayList<Player>(); 
-	ArrayList<Ai> remain_Ai_list = new ArrayList<Ai>();
+	ArrayList<Player> c_list = new ArrayList<Player>();
+	
+	ArrayList<Player> bust_p_list = new ArrayList<Player>(); 
+	ArrayList<Ai> bust_Ai_list = new ArrayList<Ai>();
 	
 	Player Me,p1,p2,p3; //플레이어 
 	Ai ai1, ai2, ai3, ai4; //Ai
 	final Dealer dealer = new Dealer(); //딜러 생성
-	
-	Deck deck; //덱 생성
+	Deck deck; //덱 
+	ArrayList<ListView> spot_list = new ArrayList<ListView>();
+    
+	AiPlay ap = new AiPlay(); //Ai 플레이 Thread
+    DealerPlay dp = new DealerPlay(); //딜러 플레이 Thread
+    ClientReady cr = new ClientReady();
+    
+	boolean Game_on = true;
+	boolean ai_turn = false;
+	boolean d_turn = false;
 	
 	Item item = new Item();
-    
+	//////////////////////////////////////////
+	///////내장 기기 관련 변수들////////////////////
+	Vibrator mVibrator;
+	
+	segthread SegThread = new segthread(); //세그먼트 Thread
+	public native int SegmentControl(int value);
+	public native int SegmentIOControl(int value);
+	
+	//TextLCD
+	public native int TextLCDOut(String str, String str2); 
+	public native int IOCtlClear();
+	String Text1="      RSP    ";
+	String Text2="game start";
+	
+	//Piezo
+	PiezoThread piezo = new PiezoThread();
+	int PiezoData;
+	int music = 0;
+	int index = 0;
+	int musicOne = 0;
+	
+	//슈퍼마리오 GameOver = 게임 짐
+	int music1[] = {5,18,0,18,18,17,7,5,3,0,3,1,0,0,17,0,0,5,0,3,6,7,6,52,53,52,5,5};
+	int duration1[] = {8,8,8,8,8,8,8,8,8,8,8,8,4,8,8,8,8,8,4,4,8,8,8,4,4,4,4,2};
+	
+	//슈퍼마리오 Level Complete = 게임 이김
+	int music2[] = {1,3,5,17,19,21,19,1,50,52,17,66,68,19,2,4,53,18,69,69,69,69,33};
+	int duration2[] = {8,8,8,8,8,4,4,8,8,8,8,8,4,4,8,8,8,8,8,4,8,8,8,2};
+
+	//슈퍼마리오 Coin Sound = 아이템 사용
+	int music3[] = {7,19,7,19,0,7,19,7,19};
+	int duration3[] = {8,8,8,8,4,8,8,8,8};
+		
+	//슈퍼라미오 1UP = 아이템 얻음
+	int music4[] = {19,21,35,33,34,36};
+	int duration4[] = {8,8,8,8,8,8};
+	
+	//말할 수 없는 비밀 OST 배틀2 =  내 턴 or 게임 초기 화면 (파#,도#솔#,레#)
+	int music5[] = {5,52,65,5,52,65,5,52,19,5,52,65,5,52,19,65,
+	6,65,67,6,65,19,6,65,66,6,65,19,6,65,66,65,
+	17,65,22,17,65,68,17,65,67,17,65,19,17,65,66,19,
+	65,0,81,0,0,0};
+	int duration5[] = {16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,
+	16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,
+	16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,
+	4,4,4,4,4,4};
+	
+	//슈퍼마리오 Castle Complete = 블랙잭으로 이김
+	int music6[] = {17,5,3,17,5,3,17,65,52,4,65,52,4,65,66,53,5,66,53,5,66,20,20,20,21,0};
+	int duration6[] = {8,8,8,8,8,8,2,8,8,8,8,8,8,2,8,8,8,8,8,8,4,8,8,8,2,2};
+	
+	public native int PiezoControl(int value);	// JNI Interface
+
     @Override
     public void onCreate (Bundle savedInstanceState){
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_ingame);
         System.loadLibrary("blackjack");
+    	//설정값 받아오기
+        Intent intent = getIntent();
+        playerCnt = intent.getIntExtra("playerCnt",0); //필요 참가자 수
+        aiCnt = intent.getIntExtra("aiCnt",0); //Ai 숫자
+        levelCnt = intent.getIntExtra("levelCnt",0); //덱 수
         
     	//TextView(텍스트 뷰)
     	final TextView deckNum = (TextView)findViewById(R.id.deckNum); //Deck의 갯수 표시 Text View
-        final TextView total_money = (TextView)findViewById(R.id.cashNum); //전체 보유 금액 Text View
-        final TextView bet_money = (TextView)findViewById(R.id.betNum); //배팅금액 Text View
+        total_money = (TextView)findViewById(R.id.cashNum); //전체 보유 금액 Text View
+        bet_money = (TextView)findViewById(R.id.betNum); //배팅금액 Text View
         final TextView cardAndItem = (TextView)findViewById(R.id.cardAndItem); //카드랑 아이템 보여주는 Text View
         final TextView Score_board = (TextView)findViewById(R.id.splitView1); //플레이어 점수 판
         final TextView Split_Card = (TextView)findViewById(R.id.splitCardSaveArea); //Split되어 플레이 대기 중인 카드
@@ -55,98 +149,71 @@ public class InGameActivity extends Activity{
         final TextView Score_board6 = (TextView)findViewById(R.id.splitView6); //플레이어6 점수 판
         final TextView Score_board_dealer = (TextView)findViewById(R.id.splitViewdealer); //딜러 점수 판
         
-        ArrayList T_list = new ArrayList<TextView>();
-        
-        //Button(버튼)
-    	final Button hitBtn = (Button)findViewById(R.id.hit);
-    	final Button stayBtn = (Button)findViewById(R.id.Stay);
-    	final Button splitBtn = (Button)findViewById(R.id.Split);
-    	final Button doubleBtn = (Button)findViewById(R.id.Double);
+        //플레이 Button(버튼)
+    	hitBtn = (Button)findViewById(R.id.hit);
+    	stayBtn = (Button)findViewById(R.id.Stay);
+    	splitBtn = (Button)findViewById(R.id.Split);
+    	doubleBtn = (Button)findViewById(R.id.Double);
     	
-    	final Button chip_1 = (Button)findViewById(R.id.chip_1);
-    	final Button chip_5 = (Button)findViewById(R.id.chip_5);
-    	final Button chip_20 = (Button)findViewById(R.id.chip_20);
-    	final Button chip_100 = (Button)findViewById(R.id.chip_100);
-    	final Button chip_500 = (Button)findViewById(R.id.chip_500);
+    	//배팅 Button(버튼)
+    	chip_1 = (Button)findViewById(R.id.chip_1);
+    	chip_5 = (Button)findViewById(R.id.chip_5);
+    	chip_20 = (Button)findViewById(R.id.chip_20);
+    	chip_100 = (Button)findViewById(R.id.chip_100);
+    	chip_500 = (Button)findViewById(R.id.chip_500);
     	
-    	final Button gameStartBtn = (Button)findViewById(R.id.gameStartBtn);
-        
-    	//게임 버튼 처음엔 enable, 게임 시작해야 눌리게 함
+    	//시작 Button(버튼)
+    	gameStartBtn = (Button)findViewById(R.id.gameStartBtn);     
+                            
+    	//버튼 비활성화
     	hitBtn.setEnabled(false);
     	stayBtn.setEnabled(false);
     	splitBtn.setEnabled(false);
     	doubleBtn.setEnabled(false);
-        
-    	//설정값 받아오기
-        Intent intent = getIntent();
-        final int playerCnt = intent.getIntExtra("playerCnt",0);
-        final int aiCnt = intent.getIntExtra("aiCnt",0);
-        final int levelCnt = intent.getIntExtra("levelCnt",0);
-       
-        int total_player = 0;
+    	
         total_player = playerCnt + aiCnt;
+        //ListView자리 배분
+        ListView spot1 = (ListView)findViewById(R.id.player1); spot_list.add(spot1);
+        ListView spot2 = (ListView)findViewById(R.id.player2); spot_list.add(spot2);
+        ListView spot3 = (ListView)findViewById(R.id.player3); spot_list.add(spot3);
+        ListView spot4 = (ListView)findViewById(R.id.player4); spot_list.add(spot4);
+        ListView spot5 = (ListView)findViewById(R.id.player5); spot_list.add(spot5);
+        ListView spot6 = (ListView)findViewById(R.id.player6); spot_list.add(spot6);
         
-        ListView spot1 = (ListView)findViewById(R.id.player1);
-        ListView spot2 = (ListView)findViewById(R.id.player2);
-        ListView spot3 = (ListView)findViewById(R.id.player3);
-        ListView spot4 = (ListView)findViewById(R.id.player4);
-        ListView spot5 = (ListView)findViewById(R.id.player5);
-        ListView spot6 = (ListView)findViewById(R.id.player6);        
-        ListView spot7 = (ListView)findViewById(R.id.dealer);
+        ListView spot7 = (ListView)findViewById(R.id.dealer); //딜러 spot
 
-        if(total_player < 6){spot6.setVisibility(View.GONE);
-        					 Score_board6.setVisibility(View.GONE);}
-        if(total_player < 5){spot5.setVisibility(View.GONE);
-        					 Score_board5.setVisibility(View.GONE);}
-        if(total_player < 4){spot4.setVisibility(View.GONE);
-        					 Score_board4.setVisibility(View.GONE);}
-        if(total_player < 3){spot3.setVisibility(View.GONE);
-        					 Score_board3.setVisibility(View.GONE);}
+        if(total_player < 6){spot6.setVisibility(View.GONE); Score_board6.setVisibility(View.GONE);}
+        if(total_player < 5){spot5.setVisibility(View.GONE);Score_board5.setVisibility(View.GONE);}
+        if(total_player < 4){spot4.setVisibility(View.GONE);Score_board4.setVisibility(View.GONE);}
+        if(total_player < 3){spot3.setVisibility(View.GONE); Score_board3.setVisibility(View.GONE);}
         
-        //Player 숫자 선택에 따른 Player 생성
-        if(playerCnt >= 1){p1 = new Player(); p_list.add(p1);} //플레이어1 생성
-        if(playerCnt >= 2){p2 = new Player(); p_list.add(p2);} //플레이어2 생성
-        if(playerCnt == 3){p3 = new Player(); p_list.add(p3);} //플레이어3 생성
-        
+        //서버 플레이어 생성
+        p1 = new Player();//플레이어1(서버 플레이어) 생성
+    	
+        //1인 이상 플레이 할시 필요한 게임 서버 생성 
+        if(playerCnt > 1)
+        {
+        	Create_Server();
+        	cr.setDaemon(true);
+        	cr.start();
+        	gameStartBtn.setEnabled(false);
+        }
+        info.start();
         //Ai 숫자 선택에 따른 Ai생성
-        if(aiCnt >= 1){
-        	ai1 = new Ai(2000, 0.9, 0.6);
-        	ai1.adapter = new ArrayAdapter<String>(this,R.layout.simpleitem, ai1.Card);
-            spot2.setAdapter(ai1.adapter);
-        	Ai_list.add(ai1);	
-        }
-        if(aiCnt >= 2){
-        	ai2 = new Ai(1500, 0.8, 0.4);
-            ai2.adapter = new ArrayAdapter<String>(this,R.layout.simpleitem, ai2.Card);
-            spot3.setAdapter(ai2.adapter);
-        	Ai_list.add(ai2);
-        }
-        if(aiCnt >= 3){
-        	ai3 = new Ai(1000, 0.75, 0.25); 
-            ai3.adapter = new ArrayAdapter<String>(this,R.layout.simpleitem, ai3.Card);
-            spot4.setAdapter(ai3.adapter);
-        	Ai_list.add(ai3);}
-        if(aiCnt >= 4){
-        	ai4 = new Ai(500, 0.65, 0.15); 
-            ai4.adapter = new ArrayAdapter<String>(this,R.layout.simpleitem, ai4.Card);
-            spot5.setAdapter(ai4.adapter);
-        	Ai_list.add(ai4);
-        }
+        Create_Ai();
         
         if(levelCnt == 1){deckNum.setText("1 DECK");}
         else if(levelCnt == 2){deckNum.setText("2 DECK");}
         else if(levelCnt == 4){deckNum.setText("4 DECK");}
         else if(levelCnt == 6){deckNum.setText("6 DECK");}
-        
-        
+              
         deck = new Deck(levelCnt);
     	deck.Shuffle();	
-    	deck.Card_Shuffled[0] = "♠A";
-    	deck.Card_Shuffled[2] = "◆A";
-    	deck.Card_Shuffled[3] = "◆A";
-    	deck.Card_Shuffled[6] = "♥A";
+    	deck.Card_Shuffled[2] = "♠A";
+    	deck.Card_Shuffled[5] = "♠10";
     	
-    	Me = p1; //본인 할당
+    	Me = p1;//본인
+    	pretotal = Me.total;
      	Me.adapter = new ArrayAdapter<String>(this,R.layout.simpleitem, Me.Card);
         spot1.setAdapter(Me.adapter);
      	total_money.setText(Integer.toString(Me.total)); //플레이어가 소지한 총 금액
@@ -156,13 +223,33 @@ public class InGameActivity extends Activity{
         dealer.adapter = new ArrayAdapter<String>(this,R.layout.simpleitem, dealer.Card);
         ListView dealer_spot = (ListView)findViewById(R.id.dealer);
         dealer_spot.setAdapter(dealer.adapter);
+        //내장 기기 부분
+        //Vibrator (진동)
+        mVibrator = (Vibrator)getSystemService(Context.VIBRATOR_SERVICE); //진동
         
-     	//배팅 부분 버튼
+        //Segment (세그먼트)
+        SegThread.setDaemon(true);
+        SegThread.start();
+        
+        //Piezo
+    	piezo.setDaemon(true);
+		PiezoData = 0;
+		PiezoControl(PiezoData);
+		piezo.start();
+
+		ap.setDaemon(true);
+        dp.setDaemon(true);                
+        ap.start();
+        dp.start();
+
+     	//배팅 버튼  부분
      	chip_1.setOnClickListener(new View.OnClickListener() {
 			public void onClick(View arg0) {
 				if(Me.bet+1 <= Me.total){
 					Me.bet = Me.bet +1;
-					bet_money.setText(Integer.toString(Me.bet));}
+					bet_money.setText(Integer.toString(Me.bet));
+					SendtoAll("hello");
+				}
 				else Toast.makeText(getApplicationContext(), "보유하신 금액을 초과하였습니다.", Toast.LENGTH_LONG).show();}
 		});
      	chip_5.setOnClickListener(new View.OnClickListener() {
@@ -204,9 +291,10 @@ public class InGameActivity extends Activity{
 			}
 		});
      	
+     	//게임조작 버튼 부분
         gameStartBtn.setOnClickListener(new Button.OnClickListener(){
 			public void onClick(View arg0) {
-				// TODO Auto-generated method stub
+				num_game++;
 				if(Me.bet != 0)
 				{
 					chip_1.setEnabled(false);
@@ -228,45 +316,26 @@ public class InGameActivity extends Activity{
 			    	String itemName = item.nowItem();
 			    	cardAndItem.setText("'"+cardName+"' 카드 획득시 \n '"+itemName+"' 얻음");
 			    	
-			    	
 			    	if(Df_card.charAt(1) == 'A'||Df_card.charAt(1) == 'J'|| Df_card.charAt(1) == 'Q'|| Df_card.charAt(1) == 'K')
-			    	{}
-									
+			    	{}				
 			    }
 				else{Toast.makeText(getApplicationContext(), "배팅을 해야 게임이 가능합니다.", Toast.LENGTH_LONG).show();}}
 		});
  		hitBtn.setOnClickListener(new Button.OnClickListener(){
 			public void onClick(View arg0) {
 				// TODO Auto-generated method stub
-				Me.Hit(deck.distribute_card());
+				Me.Hit(deck.distribute_card());				
 				Me.adapter.notifyDataSetChanged();
+				if(Me.score == 21) Me.BlackJack = true;
 				if(Me.bust){
-        			for(int i=0; i<Ai_list.size(); i++)
-        			{Ai_turn(Ai_list.get(i));}
-					Dealer_turn();
-					Me.bet = 0;
-					total_money.setText(Integer.toString(Me.total));
-					
-					chip_1.setEnabled(true);
-					chip_5.setEnabled(true);
-					chip_20.setEnabled(true);
-					chip_100.setEnabled(true);
-					chip_500.setEnabled(true);
-					
-					gameStartBtn.setEnabled(true);
-					
-			    	hitBtn.setEnabled(false);
-			    	stayBtn.setEnabled(false);
-			    	splitBtn.setEnabled(false);
-			    	doubleBtn.setEnabled(false);
+    					long[] pattern = {500, 200, 500, 200};
+    					mVibrator.vibrate(pattern, -1);
+						ai_turn = true;
+						music = 1;
+						musicOne = 0;
+						index = 0;
 			    	}
-				else
-					{
-						try {Thread.sleep(1000);
-						} catch (InterruptedException e) {
-							e.printStackTrace();}
-						Me.adapter.notifyDataSetChanged();
-					}
+				TextLcd();
 				}
 	
 		});
@@ -292,28 +361,7 @@ public class InGameActivity extends Activity{
         		else
         		{
         			Me.Stay();
-        			String score_temp = (String)Score_board1.getText();
-        			score_temp = score_temp.replaceAll("ScoreBoard","");
-        			String score_temp2 = Me.score_board.get(Me.score_board.size()-1).toString();
-        			Score_board1.setText(score_temp + " " + score_temp2);
-        			for(int i=0; i<Ai_list.size(); i++)
-        			{Ai_turn(Ai_list.get(i));}
-        			Dealer_turn();
-        			total_money.setText(Integer.toString(Me.total));
-        			bet_money.setText(Integer.toString(Me.bet));
-        	 	
-        			chip_1.setEnabled(true);
-        			chip_5.setEnabled(true);
-        			chip_20.setEnabled(true);
-        			chip_100.setEnabled(true);
-        			chip_500.setEnabled(true);
-        			gameStartBtn.setEnabled(true);
-				
-        			hitBtn.setEnabled(false);
-        			stayBtn.setEnabled(false);
-        			splitBtn.setEnabled(false);
-        			doubleBtn.setEnabled(false);
-
+        			ai_turn = true;
         		}}});
         splitBtn.setOnClickListener(new Button.OnClickListener()
         { 
@@ -358,9 +406,6 @@ public class InGameActivity extends Activity{
         			score_temp = score_temp.replaceAll("ScoreBoard","");
         			String score_temp2 = Me.score_board.get(Me.score_board.size()-1).toString();
         			Score_board1.setText(score_temp + " " + score_temp2);
-        			for(int i=0; i<Ai_list.size(); i++)
-        			{Ai_turn(Ai_list.get(i));}
-        			Dealer_turn();
         			total_money.setText(Integer.toString(Me.total));
         			bet_money.setText(Integer.toString(Me.bet));
         	 	
@@ -378,110 +423,425 @@ public class InGameActivity extends Activity{
         		}
 			}	
         });
-    }    
+    }
+    
+    public void onDestory(){
+    	try {
+    		socket.close();
+			serversocket.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+    }
+     
     void init(){
 			Toast.makeText(getApplicationContext(), "게임이 시작됩니다.", Toast.LENGTH_LONG).show();
 			//모든 플레이어 및 Ai 준비
 			Me.Ready();
 			dealer.Ready();
+			if(!c_list.isEmpty())
+			{for(int i=0; i< c_list.size(); i++)
+			 c_list.get(i).Ready();}
 			for(int i=0; i<Ai_list.size(); i++)
 			{
 				Ai_list.get(i).Ready();
 				Ai_list.get(i).bet();
 			}
 			
-			
+			//첫 카드 받기
 			Me.Hit(deck.distribute_card());
 			Me.adapter.notifyDataSetChanged();
-	    	
+			if(!c_list.isEmpty())
+			{for(int i=0; i< c_list.size(); i++)
+				c_list.get(i).Hit(deck.distribute_card());}
 			for(int i=0; i< Ai_list.size(); i++)
-			{
-				Ai_list.get(i).Hit(deck.distribute_card());
-				Ai_list.get(i).adapter.notifyDataSetChanged();
-			}
+			{Ai_list.get(i).Hit(deck.distribute_card());
+			 Ai_list.get(i).adapter.notifyDataSetChanged();}
 	    	
 	    	dealer.recieve(deck.distribute_card());
 	    	dealer.adapter.notifyDataSetChanged();
+	    	///////////////////////////////////////////////
 	    	
+	    	//두 번째 카드 받기
 	    	Me.Hit(deck.distribute_card());
 	    	Me.adapter.notifyDataSetChanged();
+			
+	    	if(!c_list.isEmpty())
+			{for(int i=0; i< c_list.size(); i++)
+				c_list.get(i).Hit(deck.distribute_card());}
 	    	
-			for(int i=0; i< Ai_list.size(); i++)
-			{
-				Ai_list.get(i).Hit(deck.distribute_card());
-				Ai_list.get(i).adapter.notifyDataSetChanged();
-			}
+			for(int i=0; i< Ai_list.size(); i++)			
+			{Ai_list.get(i).Hit(deck.distribute_card());
+			 Ai_list.get(i).adapter.notifyDataSetChanged();}
 	    	
-	    	dealer.recieve(deck.distribute_card());
-	    	dealer.Unknown = (String) dealer.Card.get(1);
-	    	dealer.Card.remove(1);
+			dealer.Unknown = deck.distribute_card();
 	    	dealer.Card.add(1,"unknown");
 	    	dealer.adapter.notifyDataSetChanged();
+	    	////////////////////////////////////////////////
+	    	
+	    	//BlackJack 확인/////////////////////////////////
+	    	if(Me.score == 21) {Me.BlackJack = true; music = 2; musicOne = 0; index = 0;}
+	    	if(!c_list.isEmpty())
+			{for(int i=0; i< c_list.size(); i++)
+	    		{if(c_list.get(i).score == 21)
+	    			c_list.get(i).BlackJack = true;}}
+			for(int i=0; i< Ai_list.size(); i++)			
+			{
+				if(Ai_list.get(i).score == 21)
+					Ai_list.get(i).BlackJack = true;}
+			////////////////////////////////////////////////
+			
+			///////////////Dealer Black Jack, Insurance, EvenMoney 확인////////////
+	    	char dfc = ((String) dealer.Card.get(0)).charAt(1);
+	    	if(dfc == 'A' || dfc == '1'|| dfc == 'J'||dfc == 'Q'||dfc == 'K')
+	    	{
+	    		//Insuracne, EvenMoney
+	    		dealer.Card.remove(1);
+	         	dealer.recieve(dealer.Unknown);
+	         	dealer.adapter.notifyDataSetChanged();
+	         	
+	         	if(dealer.score == 21)
+	         	{
+	         		dealer.BlackJack = true;
+	         		music = 1;
+	         		musicOne = 0;
+	         		index = 0;
+	         		Toast.makeText(getApplicationContext(), Integer.toString(dealer.score), Toast.LENGTH_LONG);
+	         	}
+	         }
+	    	///////////////////////////////////////////////
+	    	
+	    	//////////////////비교/////////////////////////
+	    	if(dealer.BlackJack)
+	    	{
+	    		if(!Me.BlackJack){Me.total -= Me.bet;}
+	    		Me.bet = 0;
+    			total_money.setText(Integer.toString(Me.total));
+    			bet_money.setText(Integer.toString(Me.bet));
+    			
+		    	if(!c_list.isEmpty())
+				{
+		    		for(int i=0; i< c_list.size(); i++)
+		    		{
+		    			if(!c_list.get(i).BlackJack)
+		    				c_list.get(i).total -= c_list.get(i).bet;
+		    			c_list.get(i).bet = 0;
+		    		}
+		    	}
+		    	
+				for(int i=0; i< Ai_list.size(); i++)			
+				{
+					if(!Ai_list.get(i).BlackJack)
+						Ai_list.get(i).total -= Ai_list.get(i).bet;
+				}
+				
+				chip_1.setEnabled(true);
+				chip_5.setEnabled(true);
+				chip_20.setEnabled(true);
+				chip_100.setEnabled(true);
+				chip_500.setEnabled(true);
+				gameStartBtn.setEnabled(true);
+				
+		    	hitBtn.setEnabled(false);
+		    	stayBtn.setEnabled(false);
+		    	splitBtn.setEnabled(false);
+		    	doubleBtn.setEnabled(false);
+	    	}
+	    	/////////////////////////////////////////////////////
+	    	TextLcd();
 	}
-    void Ai_turn(Ai ai) 
+    void Set_View(TextView v)
+    {v.setText("ScoreBoard");}
+    void Create_Server(){
+    	new Thread(new Runnable(){
+    		public void run() {
+    			try {
+    				serversocket = new ServerSocket(Port); //서버 소켓 생성
+					while(true)
+					{
+						socket = serversocket.accept();//서버에 접속하는 클라이언트 소켓 얻어오기
+					 	ServerReceiver sr_thread = new ServerReceiver(socket);
+					 	sr_thread.run();
+					}
+				} catch (IOException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}      			
+    			// TODO Auto-generated method stub
+    		}}).start();
+    }
+    void Create_Ai()
     {
-    	while(!ai.bust){
+    	int spot_n = playerCnt;
+        if(aiCnt >= 1){
+        	ai1 = new Ai(2000, 0.9, 0.6);
+        	ai1.adapter = new ArrayAdapter<String>(this,R.layout.simpleitem, ai1.Card);
+            spot_list.get(spot_n++).setAdapter(ai1.adapter);
+        	Ai_list.add(ai1);	
+        }
+        if(aiCnt >= 2){
+        	ai2 = new Ai(1500, 0.8, 0.4);
+            ai2.adapter = new ArrayAdapter<String>(this,R.layout.simpleitem, ai2.Card);
+            spot_list.get(spot_n++).setAdapter(ai2.adapter);
+        	Ai_list.add(ai2);}
+        if(aiCnt >= 3){
+        	ai3 = new Ai(1000, 0.75, 0.25); 
+            ai3.adapter = new ArrayAdapter<String>(this,R.layout.simpleitem, ai3.Card);
+            spot_list.get(spot_n++).setAdapter(ai3.adapter);
+        	Ai_list.add(ai3);}
+        if(aiCnt >= 4){
+        	ai4 = new Ai(500, 0.65, 0.15); 
+            ai4.adapter = new ArrayAdapter<String>(this,R.layout.simpleitem, ai4.Card);
+            spot_list.get(spot_n++).setAdapter(ai4.adapter);
+        	Ai_list.add(ai4);}
+    }
+    void SendtoAll(String msg)
+    {
+    	for(int i=0; i < c_list.size(); i++)
+    	{
+    		try 
+    		{DataOutputStream out = c_list.get(i).OS;
+			 out.writeUTF(msg);
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+    	}
+    }
+
+    
+class ServerReceiver extends Thread{
+    	//서버의 In/Out 스트림
+    	Socket socket = null;
+    	boolean Connected = true; 
+    	DataInputStream IS = null; //InPut 스트림
+    	Player p;
+    	ServerReceiver(Socket socket)
+    	{
+    		p = new Player();
+    		this.socket = socket;
+    		try {
+    			IS = new DataInputStream(socket.getInputStream());
+    			p.OS = new DataOutputStream(socket.getOutputStream());
+    		} catch (IOException e) {
+    			// TODO Auto-generated catch block
+    			e.printStackTrace();}
+    	}
+    	public void run()
+    	{
+    		try {
+    			if(c_list.size() == 0)
+    				p.name = "P2";
+    			else
+    				p.name = "P3";
+    		c_list.add(p);
+    		SendtoAll(p.name);
+    		while(IS != null)
+    	    	{
+    				String Check = IS.readUTF();
+    				if(Check.equals("Ready"))
+    					n_c_ready++;
+    			}
+    		} 
+    		catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();}
+    	}
+}
+class Send_game_info extends Thread{
+	public void run()
+	{
+		while(Game_on)
+		{
+			if(playerCnt-1 == c_list.size())
+			{
+				SendtoAll("playerCnt" + Integer.toString(playerCnt));
+				try {
+					sleep(1000);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				SendtoAll("aiCnt" + Integer.toString(aiCnt));
+				break;
+			}
+		}
+	}
+}
+class ClientReady extends Thread{
+	public void run()
+	{
+		while(Game_on)
+		{
+			if(n_c_ready == playerCnt - 1)
+			{
+		    	new Thread(new Runnable() {    
+		       	    public void run() {
+			  		    runOnUiThread(new Runnable() {    	  		      
+			  		       public void run() {
+			  		        // TODO Auto-generated method stub
+			  		    	 gameStartBtn.setEnabled(true);
+			  		       }
+			  		      });
+		       	   }//run method
+		    }).start();
+			}
+		}
+	}
+}
+class GStart extends Thread{}
+class AiPlay extends Thread{
+    void Ai_turn(final Ai ai) 
+    {
+		try {sleep(1000);} catch(InterruptedException e) 
+		{// TODO Auto-generated catch block
+			e.printStackTrace();}
+    	while(!ai.bust && !ai.stay){   		
     		if(ai.score <= 11)
-    		{
-    			ai.Hit(deck.distribute_card());
-    			ai1.adapter.notifyDataSetChanged();
-    		}
+    		{Hit_Card(ai);}
     		else if(ai.score > 11 && ai.score < 16)
     		{
     			double temp;
     			temp = Math.random();
     			if(temp <= ai.prob_hit_12)
-    			{
-    				ai.Hit(deck.distribute_card());
-    				ai.adapter.notifyDataSetChanged();
-    			}
+    			{Hit_Card(ai);}
     			else
-    				break;
+    				ai.stay = true;
     		}
-    		else if(ai.score >= 16)
+    		else if(ai.score >= 16 && ai.score <= 19)
     		{
     			double temp;
     			temp = Math.random();
     			if(temp <= ai.prob_hit_16)
-    			{
-    				ai.Hit(deck.distribute_card());
-    				ai.adapter.notifyDataSetChanged();
-    			}
+    			{Hit_Card(ai);}
     			else
-    				break;
+    				ai.stay = true;
+    		}
+    		else 
+    			ai.stay = true;
+    		try {sleep(1000);} catch(InterruptedException e) 
+    		{// TODO Auto-generated catch block
+    			e.printStackTrace();}
+    	}
+    }
+    void Hit_Card(final Ai ai)
+    {
+    	ai.Hit(deck.distribute_card());
+    	TextLcd();
+    	new Thread(new Runnable() {    
+	       	    public void run() {
+   	  		    runOnUiThread(new Runnable() {    	  		      
+    	  		       public void run() {
+    	  		        // TODO Auto-generated method stub
+    	  		    	 ai.adapter.notifyDataSetChanged();
+    	  		       }
+    	  		      });
+	       	   }//run method
+	    }).start();
+    }
+    public void run()
+    {
+    	while(true)
+    	{
+    		if(ai_turn)
+    		{
+    			for(int i=0; i<Ai_list.size(); i++)
+    				{Ai_turn(Ai_list.get(i));}
+        		ai_turn = false;
+        		d_turn = true;
     		}
     	}
     }
-    void Dealer_turn()
+}
+class DealerPlay extends Thread{
+	void UI_change(){
+    	new Thread(new Runnable() {    
+       	    public void run() {
+	  		    runOnUiThread(new Runnable() {    	  		      
+	  		       public void run() {
+	  		        // TODO Auto-generated method stub
+	  		    	 dealer.adapter.notifyDataSetChanged();
+	  		       }
+	  		      });
+       	   }//run method
+    }).start();
+	}
+	void Set_Ready(){
+		  n_c_ready = 0;
+		  new Thread(new Runnable() {    
+			 public void run(){
+				 runOnUiThread(new Runnable() {    	  		      
+				 public void run() {
+		     // TODO Auto-generated method stub
+		     total_money.setText(Integer.toString(Me.total));
+		     bet_money.setText(Integer.toString(Me.bet));
+      		 chip_1.setEnabled(true);
+      		 chip_5.setEnabled(true);
+      		 chip_20.setEnabled(true);
+      		 chip_100.setEnabled(true);
+      		 chip_500.setEnabled(true);
+      		 if(playerCnt == 1)
+      			 gameStartBtn.setEnabled(true);
+      		 
+      		 hitBtn.setEnabled(false);
+      		 stayBtn.setEnabled(false);
+      		 splitBtn.setEnabled(false);
+      		 doubleBtn.setEnabled(false);
+		       }
+		      });
+ 	   }//run method
+		}).start();
+	}
+	void Dealer_turn()
     {
-    	dealer.Card.remove(1);
-    	dealer.Card.add(1,dealer.Unknown);
-    	dealer.adapter.notifyDataSetChanged();
+		if(dealer.Card.get(1) == "unknown")
+		{
+			dealer.Card.remove(1);
+			dealer.recieve(dealer.Unknown);
+			UI_change();
+		}
+		
     	
-    	while(dealer.score < 16 && !dealer.bust)
+    	while(dealer.score <= 16 && !dealer.bust)
     	{
     		dealer.recieve(deck.distribute_card());
-    		dealer.adapter.notifyDataSetChanged();
+        	TextLcd();
+        	UI_change();
+    		//SendtoAll((String) dealer.Card.get(dealer.nth_card-1));
+    		try {
+				sleep(2000);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
     	}
-    	
     	if(!Me.bust)
     	{
-    		for(int i=0; i<Me.score_board.size(); i++)
+    		for(int i=0; i< Me.score_board.size(); i++)
     		{int score = (Integer) Me.score_board.get(i);
     				
     			if(score > dealer.score)
     			{
-    				if(Me.Double_down[i])
-    					Me.total = Me.total + (2*Me.bet);
-    				else
-    					Me.total = Me.total + Me.bet;
+    				if(Me.Double_down[i]) {Me.total = Me.total + (2*Me.bet);}
+    				else {Me.total = Me.total + Me.bet;}
+    				music = 2;
+    				musicOne = 0;
+    				index = 0;
     			}
     			if(score < dealer.score)
     			{
-    				if(Me.Double_down[i])
+    				if(Me.Double_down[i]){
     					Me.total = Me.total - (2*Me.bet);
-    				else
+    				}
+    				else{
     					Me.total = Me.total - Me.bet;
+    				}
+					music = 1;
+					musicOne = 0;
+					index = 0;
+    				long[] pattern = {500, 200, 500, 200};
+                	mVibrator.vibrate(pattern, -1);
     			}
     		}
     	}
@@ -493,11 +853,160 @@ public class InGameActivity extends Activity{
     			Ai_list.get(i).total = Ai_list.get(i).total - Ai_list.get(i).bet;
     	}
     	Me.bet = 0;
+    	n_c_ready = 0;
+    	Set_Ready();
     }
-    void Set_View(TextView v)
-    {v.setText("ScoreBoard");}
+	public void run(){
+		while(true)
+		{
+			if(d_turn)
+			{
+				Dealer_turn();
+				d_turn = false;
+			}
+		}
+	}
+}
+	class segthread extends Thread{
+		   public void run(){      
+		         while(Game_on) 
+		         {
+		            SegmentControl(Me.total);
+		            int tmp;
+		            if(pretotal > Me.total){
+		               tmp = Me.total;
+		               while(pretotal != tmp) {
+		                  SegmentControl(pretotal);
+		                  pretotal -= 2;
+		               }
+		            }else if(pretotal < Me.total){
+		               tmp = Me.total;
+		               while(pretotal != tmp) {
+		                  SegmentControl(pretotal);
+		                  pretotal += 2;
+		               }
+		              }
+		            }
+		          }
+		   }
+	void TextLcd(){
+		String num_card = Integer.toString(deck.nth_card);
+        String remain_card = Integer.toString(deck.num_of_deck * 52 - deck.nth_card);
+        String num_deck = Integer.toString(deck.num_of_deck);   
+        String nth_game = Integer.toString(num_game);
+        Text2 = (num_card + " / " + remain_card + " / " + num_deck + " / " + nth_game);
+        TextLCDOut(Text1, Text2);	
+	}
+	class PiezoThread extends Thread{
+		public void run(){
+			while(Game_on){
+				//게임이 실행중인 동안
+				if(music == 1 && musicOne == 0){
+					int noteDuration = 1000/duration1[index];
+					PiezoControl(music1[index]);
+					try{
+						sleep(noteDuration);
+					}catch(InterruptedException e){
+					}
+					PiezoControl(0);
+					try{
+						sleep(100);
+					}catch(InterruptedException e){
+					}
+					index++;
+					if(index == music1.length){
+						musicOne = 1;
+					}
+				}else if(music == 2 && musicOne == 0){
+					int noteDuration = 1000/duration2[index];
+					PiezoControl(music2[index]);
+					try{
+						sleep(noteDuration);
+					}catch(InterruptedException e){
+					}
+					PiezoControl(0);
+					try{
+						sleep(100);
+					}catch(InterruptedException e){
+					}
+					index++;
+					if(index == music2.length){
+						musicOne = 1;
+					}
+				}else if(music == 3 && musicOne == 0){
+					int noteDuration = 1000/duration3[index];
+					PiezoControl(music3[index]);
+					try{
+						sleep(noteDuration);
+					}catch(InterruptedException e){
+					}
+					PiezoControl(0);
+					try{
+						sleep(100);
+					}catch(InterruptedException e){
+					}
+					index++;
+					if(index == music3.length){
+						musicOne = 1;
+					}
+				}else if(music == 4 && musicOne == 0){
+					int noteDuration = 1000/duration4[index];
+					PiezoControl(music4[index]);
+					try{
+						sleep(noteDuration);
+					}catch(InterruptedException e){
+					}
+					PiezoControl(0);
+					try{
+						sleep(100);
+					}catch(InterruptedException e){
+					}
+					index++;
+					if(index == music4.length){
+						musicOne = 1;
+					}
+				}else if(music == 5 && musicOne == 0){
+					int noteDuration = 1000/duration5[index];
+					PiezoControl(music5[index]);
+					try{
+						sleep(noteDuration);
+					}catch(InterruptedException e){
+					}
+					PiezoControl(0);
+					try{
+						sleep(100);
+					}catch(InterruptedException e){
+					}
+					index++;
+					if(index == music5.length){
+						musicOne = 1;
+					}
+				}else if(music == 6 && musicOne == 0){
+					int noteDuration = 1000/duration6[index];
+					PiezoControl(music6[index]);
+					try{
+						sleep(noteDuration);
+					}catch(InterruptedException e){
+					}
+					PiezoControl(0);
+					try{
+						sleep(100);
+					}catch(InterruptedException e){
+					}
+					index++;
+					if(index == music6.length){
+						musicOne = 1;
+					}
+				}
+			}
+		}
+	}
 
 }
+
+
+
+
         
 
 

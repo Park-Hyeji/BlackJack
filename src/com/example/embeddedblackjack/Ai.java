@@ -15,6 +15,9 @@ public class Ai extends Thread{
 	boolean bust = false;
 	boolean insurance = false;
 	boolean Even_money = false;
+	boolean done = false;
+	boolean BlackJack = false;
+	boolean stay = false;
 	
 	ArrayList Card = new ArrayList<String>(); //받은 카드 저장
 	ArrayList Spilted =  new ArrayList<String>(); //Spilted된 카드 저장
@@ -33,14 +36,13 @@ public class Ai extends Thread{
 	 	nth_card = 0;
 	 	score = 0;
 	 	bust = false;
+	 	stay = false;
 		insurance = false;
 		Even_money = false;
 	}
 	void bet(){
-		if(total > max_bet)
-			bet = (int)(Math.random()* max_bet);
-		else
-			bet = (int)(Math.random() * total);
+		if(total > max_bet) bet = (int)(Math.random()* max_bet);
+		else bet = (int)(Math.random() * total);
 	}
 	void Hit(String card){
 		nth_card++;

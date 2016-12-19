@@ -58,6 +58,11 @@ obj/local/armeabi/objs/blackjack/blackjack.o: jni/blackjack.c \
  D:/EmbeddedSystem/Android-devenv/Android/ndk/platforms/android-14/arch-arm/usr/include/asm/mman.h \
  D:/EmbeddedSystem/Android-devenv/Android/ndk/platforms/android-14/arch-arm/usr/include/asm-generic/mman.h \
  D:/EmbeddedSystem/Android-devenv/Android/ndk/platforms/android-14/arch-arm/usr/include/asm/page.h \
+ D:/EmbeddedSystem/Android-devenv/Android/ndk/platforms/android-14/arch-arm/usr/include/android/log.h \
+ D:/EmbeddedSystem/Android-devenv/Android/ndk/platforms/android-14/arch-arm/usr/include/sys/stat.h \
+ D:/EmbeddedSystem/Android-devenv/Android/ndk/platforms/android-14/arch-arm/usr/include/linux/stat.h \
+ D:/EmbeddedSystem/Android-devenv/Android/ndk/platforms/android-14/arch-arm/usr/include/endian.h \
+ D:/EmbeddedSystem/Android-devenv/Android/ndk/platforms/android-14/arch-arm/usr/include/sys/endian.h \
  D:/EmbeddedSystem/Android-devenv/Android/ndk/platforms/android-14/arch-arm/usr/include/errno.h \
  D:/EmbeddedSystem/Android-devenv/Android/ndk/platforms/android-14/arch-arm/usr/include/linux/errno.h \
  D:/EmbeddedSystem/Android-devenv/Android/ndk/platforms/android-14/arch-arm/usr/include/asm/errno.h \
@@ -181,6 +186,16 @@ D:/EmbeddedSystem/Android-devenv/Android/ndk/platforms/android-14/arch-arm/usr/i
 D:/EmbeddedSystem/Android-devenv/Android/ndk/platforms/android-14/arch-arm/usr/include/asm-generic/mman.h:
 
 D:/EmbeddedSystem/Android-devenv/Android/ndk/platforms/android-14/arch-arm/usr/include/asm/page.h:
+
+D:/EmbeddedSystem/Android-devenv/Android/ndk/platforms/android-14/arch-arm/usr/include/android/log.h:
+
+D:/EmbeddedSystem/Android-devenv/Android/ndk/platforms/android-14/arch-arm/usr/include/sys/stat.h:
+
+D:/EmbeddedSystem/Android-devenv/Android/ndk/platforms/android-14/arch-arm/usr/include/linux/stat.h:
+
+D:/EmbeddedSystem/Android-devenv/Android/ndk/platforms/android-14/arch-arm/usr/include/endian.h:
+
+D:/EmbeddedSystem/Android-devenv/Android/ndk/platforms/android-14/arch-arm/usr/include/sys/endian.h:
 
 D:/EmbeddedSystem/Android-devenv/Android/ndk/platforms/android-14/arch-arm/usr/include/errno.h:
 

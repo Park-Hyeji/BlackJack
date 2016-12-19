@@ -1,11 +1,14 @@
 package com.example.embeddedblackjack;
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
 import android.widget.ArrayAdapter;
 
 public class Player {
+	String name = "NDF";
 	int total = 15000;
 	int bet = 0;
 	int nth_card = 0;
@@ -14,15 +17,22 @@ public class Player {
 	boolean bust = false;
 	boolean insurance = false;
 	boolean Even_money = false;
-	boolean hasAce;
+	boolean BlackJack = false;
+	boolean stay = false;
 
 	ArrayList Card = new ArrayList<String>(); //받은 카드 저장
 	ArrayList Splited =  new ArrayList<String>(); //Spilted된 카드 저장
 	ArrayList score_board = new ArrayList<Integer>();
 	boolean Double_down[] = new boolean[15];
 	
+	//통신에 필요한 플레이어
+	DataInputStream IS = null; //InPut 스트림
+	DataOutputStream OS = null; //OutPut 스트림
+	
 	//ArrayList Item_list = new ArrayList<Item>();
 	ArrayAdapter<String> adapter;
+	
+	boolean hasAce;
 	
 	void Ready(){
 	 	Card.clear();
@@ -30,6 +40,7 @@ public class Player {
 	 	score_board.clear();
 	 	nth_card = 0;
 	 	score = 0;
+	 	BlackJack = false;
 	 	bust = false;
 		insurance = false;
 		Even_money = false;
@@ -76,7 +87,10 @@ public class Player {
 			}
 		}
 	}
-	void Stay(){score_board.add(score);}
+	void Stay(){
+		stay = true;
+		score_board.add(score);
+	}
 	void Bust(){
 		total = total - bet;
 		score = 0;
@@ -120,4 +134,5 @@ public class Player {
 			}
 		}
 	void Double_down(){}
+
 }
