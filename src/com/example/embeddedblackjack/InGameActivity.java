@@ -95,8 +95,6 @@ public class InGameActivity extends Activity{
 	//TextLCD
 	public native int TextLCDOut(String str, String str2); 
 	public native int IOCtlClear();
-	String Text1="      "+nickName+"    ";
-	String Text2="game start";
 	
 	//DotMatrix
 	DotMatrixThread dmthread = new DotMatrixThread();
@@ -257,7 +255,7 @@ public class InGameActivity extends Activity{
         
         //Segment (세그먼트)
         SegThread.setDaemon(true);
-       // SegThread.start();
+        SegThread.start();
         
         //Piezo
     	piezo.setDaemon(true);
@@ -733,7 +731,8 @@ public class InGameActivity extends Activity{
         String remain_card = Integer.toString(deck.num_of_deck * 52 - deck.nth_card);
         String num_deck = Integer.toString(deck.num_of_deck);   
         String nth_game = Integer.toString(num_game);
-        Text2 = (num_card + " / " + remain_card + " / " + num_deck + " / " + nth_game);
+    	String Text1="      "+nickName+"    ";
+    	String Text2 = (num_card + " / " + remain_card + " / " + num_deck + " / " + nth_game);
         TextLCDOut(Text1, Text2);	
 	}
     void GetItem(Player p, String Card, Item it)
