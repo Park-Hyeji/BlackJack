@@ -51,7 +51,9 @@ public class InGameActivity extends Activity{
 	int pretotal; //게임 이전 Total
 	int n_c_ready = 0; //준비된 클라이언트 수
 	int num_game = 0; //게임 횟수
-
+	int total_draw; //현재 까지 뽑힌 카드 수 (종료시 사용)
+	int cur_draw = 0; //전체 뽑혀야 할 카드 수(종료시 사용)
+	
 	int playerWin = 0;//플레이어가 이겼는지 졌는지 이기면 1, 지면2
 	boolean hitBtnClicked = false;
 	boolean stayBtnClicked = false;
@@ -147,6 +149,8 @@ public class InGameActivity extends Activity{
 	//Full color LED
     //HIT-LED1빨간색, STAY-LED2주황색, DOUBLE-LED3노란색, SPLIT-LED4초록색, EVENMONEY-all파란색, INSURANCE-all보라색, WIN-all핑크색, LOOSE-all검은색
     public native int FLEDControl(int val);
+    
+	Exit exit = new Exit();
 
     @Override
     public void onCreate (Bundle savedInstanceState){
@@ -228,7 +232,7 @@ public class InGameActivity extends Activity{
         //Ai 숫자 선택에 따른 Ai생성
         Create_Ai();
         
-        if(levelCnt == 1){deckNum.setText("1 DECK"); deck = new Deck(levelCnt,4);}
+        if(levelCnt == 1){deckNum.setText("1 DECK"); deck = new Deck(levelCnt,4); }
         else if(levelCnt == 2){deckNum.setText("2 DECK");deck = new Deck(levelCnt,2);}
         else if(levelCnt == 4){deckNum.setText("4 DECK");deck = new Deck(levelCnt,1);}
         else if(levelCnt == 6){deckNum.setText("6 DECK");deck = new Deck(levelCnt,1);}
@@ -263,9 +267,11 @@ public class InGameActivity extends Activity{
 		PiezoControl(PiezoData);
 		piezo.start();
 
+		exit.setDaemon(true);
+		exit.start();
+		
 		dmthread.setDaemon(true);
         dmthread.start();
-
 		
 		ap.setDaemon(true);
         dp.setDaemon(true);                
@@ -401,6 +407,10 @@ public class InGameActivity extends Activity{
         		}
         		else
         		{
+			    	hitBtn.setEnabled(false);
+			    	stayBtn.setEnabled(false);
+			    	splitBtn.setEnabled(false);
+			    	doubleBtn.setEnabled(false);
         			Me.Stay();
         			ai_turn = true;
         		}}});
@@ -1023,12 +1033,18 @@ class DealerPlay extends Thread{
     			}
     		}
     	}
+    	int iter = 0;
     	for(int i=0; i<Ai_list.size(); i++)
     	{
-    		if(Ai_list.get(i).score > dealer.score)
-    			Ai_list.get(i).total = Ai_list.get(i).total + Ai_list.get(i).bet;
-    		if(Ai_list.get(i).score < dealer.score)
-    			Ai_list.get(i).total = Ai_list.get(i).total - Ai_list.get(i).bet;
+    		if(Ai_list.get(iter).score > dealer.score)
+    			Ai_list.get(iter).total = Ai_list.get(iter).total + Ai_list.get(iter).bet;
+    		if(Ai_list.get(iter).score < dealer.score)
+    			Ai_list.get(iter).total = Ai_list.get(iter).total - Ai_list.get(iter).bet;
+    		
+    		if(Ai_list.get(iter).total <= 0)
+    			{dead_Ai_list.add(Ai_list.get(iter));
+    				Ai_list.remove(iter);}
+    		else iter++;
     	}
     	Me.bet = 0;
     	n_c_ready = 0;
@@ -1283,6 +1299,42 @@ class PiezoThread extends Thread{
 		   else if(item_num == 4){effect = "BUST됐을 때, 마지막 카드 버리기";}
 		   else if(item_num == 5){effect = "패배 시에 배팅 금액을 돌려받기";}
 		   }  
+	}
+	class Exit extends Thread{
+		public void run()
+		{
+			while(Game_on)
+			{
+				if((Me.total <= 0 )||(deck.nth_shuffle == deck.num_of_shuffle && deck.nth_card == 52*deck.num_of_deck))
+				{
+					dp.interrupt();
+					ap.interrupt();
+					
+					//순위 DotMatrix
+					int rank = 1;
+			    	if(!c_list.isEmpty())
+					{for(int i=0; i< c_list.size(); i++)
+						if(c_list.get(i).total > Me.total)
+							rank++;
+					}
+					for(int i=0; i< Ai_list.size(); i++)			
+					{
+						if(Ai_list.get(i).total > Me.total)
+							rank++;
+					}
+					String Rank = Integer.toString(rank);
+					DotMatrixControl(Rank+"등");
+					try {
+						sleep(5000);
+					} catch (InterruptedException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+					finish(); 
+		    		android.os.Process.killProcess(android.os.Process.myPid());
+				}
+			}
+		}
 	}
 }
 
