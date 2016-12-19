@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import android.widget.ArrayAdapter;
+import android.widget.Toast;
 
 public class Player {
 	String name = "NDF";
@@ -19,7 +20,13 @@ public class Player {
 	boolean Even_money = false;
 	boolean BlackJack = false;
 	boolean stay = false;
-
+	
+	//아이템 관련 변수
+	boolean DoubleWin = false;
+	boolean TripleWin = false;
+	boolean Bust_change = false;
+	boolean lose_protect = false;
+	
 	ArrayList Card = new ArrayList<String>(); //받은 카드 저장
 	ArrayList Splited =  new ArrayList<String>(); //Spilted된 카드 저장
 	ArrayList score_board = new ArrayList<Integer>();
@@ -29,7 +36,6 @@ public class Player {
 	DataInputStream IS = null; //InPut 스트림
 	DataOutputStream OS = null; //OutPut 스트림
 	
-	//ArrayList Item_list = new ArrayList<Item>();
 	ArrayAdapter<String> adapter;
 	
 	boolean hasAce;
@@ -44,6 +50,10 @@ public class Player {
 	 	bust = false;
 		insurance = false;
 		Even_money = false;
+		DoubleWin = false;
+		TripleWin = false;
+		Bust_change = false;
+		lose_protect = false;
 		for(int i=0; i<10; i++)
 			Double_down[i] = false;
 	}
@@ -92,15 +102,30 @@ public class Player {
 		score_board.add(score);
 	}
 	void Bust(){
+		if(Bust_change == true)
+		{
+			String last_card = (String) this.Card.get(this.Card.size()-1);
+			char var = last_card.charAt(1);
+			if(var == 'J' || var == 'Q' || var =='K'||var == '1'){this.score -= 10;}
+			else if(var =='A'){this.score -= 11;}
+			else if(var == 'a'){this.score--;}
+			else {this.score -= (var - 48);}
+			this.nth_card--;
+			this.Card.remove(this.Card.size()-1);
+			this.Bust_change = false;
+			return;
+		}
 		total = total - bet;
 		score = 0;
 		if(!Splited.isEmpty())
-		{nth_card = 0;
-		 Card.clear();
-		 Hit((String) Splited.get(0));
-		 Splited.remove(0);}
+		{
+			nth_card = 0;
+			Card.clear();
+			Hit((String) Splited.get(0));
+			Splited.remove(0);}
 		else 
-			bust = true;}
+			bust = true;
+		}
 	void Continue(){
 			score_board.add(score);
 			score = 0;
