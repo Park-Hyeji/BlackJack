@@ -36,40 +36,42 @@ public class InGameActivity extends Activity{
 	boolean AllConnected = true;
 	////////////////////////////////
 	/////UI 관련 변수들////////////////
-	TextView total_money, bet_money;
+	TextView total_money, bet_money, cardAndItem;
 	Button chip_1, chip_5, chip_20 ,chip_100, chip_500;
 	Button gameStartBtn, hitBtn, stayBtn, doubleBtn, splitBtn;
 	/////플레이에 관련 변수들/////////////
-	int playerCnt = 0;
-	int aiCnt = 0;
-	int levelCnt = 0;
-	int total_player = 0;
-	int pretotal; 
-	int n_c_ready = 0;
-	int num_game = 0;
+	int playerCnt = 0; //플레이어 숫자
+	int aiCnt = 0; //Ai 숫자
+	int levelCnt = 0; //Deck 숫자
+	int total_player = 0; //전체 참가자 수
+	int pretotal; //게임 이전 Total
+	int n_c_ready = 0; //준비된 클라이언트 수
+	int num_game = 0; //게임 횟수
+	ArrayList<Ai> Ai_list = new ArrayList<Ai>(); //Ai 배열
+	ArrayList<Player> c_list = new ArrayList<Player>(); //클라이언트 배열
 	
-	ArrayList<Ai> Ai_list = new ArrayList<Ai>();
-	ArrayList<Player> c_list = new ArrayList<Player>();
-	
-	ArrayList<Player> bust_p_list = new ArrayList<Player>(); 
-	ArrayList<Ai> bust_Ai_list = new ArrayList<Ai>();
+	ArrayList<Player> dead_p_list = new ArrayList<Player>(); //재산이 0인 플레이어들
+	ArrayList<Ai> dead_Ai_list = new ArrayList<Ai>(); //재산이 0인 Ai들
 	
 	Player Me,p1,p2,p3; //플레이어 
 	Ai ai1, ai2, ai3, ai4; //Ai
 	final Dealer dealer = new Dealer(); //딜러 생성
 	Deck deck; //덱 
-	ArrayList<ListView> spot_list = new ArrayList<ListView>();
+	ArrayList<ListView> spot_list = new ArrayList<ListView>(); //게임 자리
     
 	AiPlay ap = new AiPlay(); //Ai 플레이 Thread
     DealerPlay dp = new DealerPlay(); //딜러 플레이 Thread
-    ClientReady cr = new ClientReady();
+    ClientReady cr = new ClientReady(); //클라이언트 준비 Thread
     
-	boolean Game_on = true;
-	boolean ai_turn = false;
-	boolean d_turn = false;
+	boolean Game_on = true; //게임중
+	boolean ai_turn = false; //ai 차례
+	boolean d_turn = false; //Dealer 차례
 	
-	Item item = new Item();
+	Item item; //Item
+	String itemcard;
+	String itemeffect;
 	//////////////////////////////////////////
+	
 	///////내장 기기 관련 변수들////////////////////
 	Vibrator mVibrator;
 	
@@ -137,10 +139,9 @@ public class InGameActivity extends Activity{
     	final TextView deckNum = (TextView)findViewById(R.id.deckNum); //Deck의 갯수 표시 Text View
         total_money = (TextView)findViewById(R.id.cashNum); //전체 보유 금액 Text View
         bet_money = (TextView)findViewById(R.id.betNum); //배팅금액 Text View
-        final TextView cardAndItem = (TextView)findViewById(R.id.cardAndItem); //카드랑 아이템 보여주는 Text View
-        final TextView Score_board = (TextView)findViewById(R.id.splitView1); //플레이어 점수 판
-        final TextView Split_Card = (TextView)findViewById(R.id.splitCardSaveArea); //Split되어 플레이 대기 중인 카드
+        cardAndItem = (TextView)findViewById(R.id.cardAndItem); //카드랑 아이템 보여주는 Text View
         
+        final TextView Split_Card = (TextView)findViewById(R.id.splitCardSaveArea); //Split되어 플레이 대기 중인 카드        
         final TextView Score_board1 = (TextView)findViewById(R.id.splitView1); //플레이어1 점수 판
         final TextView Score_board2 = (TextView)findViewById(R.id.splitView2); //플레이어2 점수 판
         final TextView Score_board3 = (TextView)findViewById(R.id.splitView3); //플레이어3 점수 판
@@ -236,7 +237,7 @@ public class InGameActivity extends Activity{
 		PiezoData = 0;
 		PiezoControl(PiezoData);
 		piezo.start();
-
+		
 		ap.setDaemon(true);
         dp.setDaemon(true);                
         ap.start();
@@ -294,7 +295,10 @@ public class InGameActivity extends Activity{
      	//게임조작 버튼 부분
         gameStartBtn.setOnClickListener(new Button.OnClickListener(){
 			public void onClick(View arg0) {
-				num_game++;
+				//말할 수 없는 비밀
+				//music = 5;
+				//index = 0;
+				//musicOne = 0;
 				if(Me.bet != 0)
 				{
 					chip_1.setEnabled(false);
@@ -309,15 +313,8 @@ public class InGameActivity extends Activity{
 			    	splitBtn.setEnabled(true);
 			    	doubleBtn.setEnabled(true);
 			    	init();	
-			    	String Df_card = (String)dealer.Card.get(0);
 			    	
 			    	//이번 게임에서 이 카드 얻으면 이 아이템 얻음 표시
-			    	String cardName = item.nowCard();
-			    	String itemName = item.nowItem();
-			    	cardAndItem.setText("'"+cardName+"' 카드 획득시 \n '"+itemName+"' 얻음");
-			    	
-			    	if(Df_card.charAt(1) == 'A'||Df_card.charAt(1) == 'J'|| Df_card.charAt(1) == 'Q'|| Df_card.charAt(1) == 'K')
-			    	{}				
 			    }
 				else{Toast.makeText(getApplicationContext(), "배팅을 해야 게임이 가능합니다.", Toast.LENGTH_LONG).show();}}
 		});
@@ -325,7 +322,8 @@ public class InGameActivity extends Activity{
 			public void onClick(View arg0) {
 				// TODO Auto-generated method stub
 				Me.Hit(deck.distribute_card());				
-				Me.adapter.notifyDataSetChanged();
+				Me.adapter.notifyDataSetChanged();		
+				GetItem(Me,itemcard,item);
 				if(Me.score == 21) Me.BlackJack = true;
 				if(Me.bust){
     					long[] pattern = {500, 200, 500, 200};
@@ -334,7 +332,7 @@ public class InGameActivity extends Activity{
 						music = 1;
 						musicOne = 0;
 						index = 0;
-			    	}
+					}
 				TextLcd();
 				}
 	
@@ -437,17 +435,22 @@ public class InGameActivity extends Activity{
      
     void init(){
 			Toast.makeText(getApplicationContext(), "게임이 시작됩니다.", Toast.LENGTH_LONG).show();
+			num_game++;//게임 횟수 증가
 			//모든 플레이어 및 Ai 준비
-			Me.Ready();
-			dealer.Ready();
+			Me.Ready(); //본인
+			dealer.Ready(); //딜러
 			if(!c_list.isEmpty())
-			{for(int i=0; i< c_list.size(); i++)
+			{for(int i=0; i< c_list.size(); i++) //클라이언트 존재시 클라이언트
 			 c_list.get(i).Ready();}
-			for(int i=0; i<Ai_list.size(); i++)
-			{
-				Ai_list.get(i).Ready();
-				Ai_list.get(i).bet();
-			}
+			for(int i=0; i<Ai_list.size(); i++) //Ai
+			{Ai_list.get(i).Ready();
+			 Ai_list.get(i).bet();}
+			
+			item = new Item();
+			item.make_item();
+	    	itemcard = item.nowCard();
+	    	itemeffect = item.effect;
+	    	cardAndItem.setText("'"+itemcard+"' 카드 획득시 \n '"+itemeffect+"' 효과 얻음");		
 			
 			//첫 카드 받기
 			Me.Hit(deck.distribute_card());
@@ -479,9 +482,9 @@ public class InGameActivity extends Activity{
 	    	dealer.Card.add(1,"unknown");
 	    	dealer.adapter.notifyDataSetChanged();
 	    	////////////////////////////////////////////////
-	    	
+	    	GetItem(Me,itemcard,item);
 	    	//BlackJack 확인/////////////////////////////////
-	    	if(Me.score == 21) {Me.BlackJack = true; music = 2; musicOne = 0; index = 0;}
+	    	if(Me.score == 21) {Me.BlackJack = true; music = 6; musicOne = 0; index = 0;}
 	    	if(!c_list.isEmpty())
 			{for(int i=0; i< c_list.size(); i++)
 	    		{if(c_list.get(i).score == 21)
@@ -609,8 +612,58 @@ public class InGameActivity extends Activity{
 			}
     	}
     }
+    void TextLcd(){
+		String num_card = Integer.toString(deck.nth_card);
+        String remain_card = Integer.toString(deck.num_of_deck * 52 - deck.nth_card);
+        String num_deck = Integer.toString(deck.num_of_deck);   
+        String nth_game = Integer.toString(num_game);
+        Text2 = (num_card + " / " + remain_card + " / " + num_deck + " / " + nth_game);
+        TextLCDOut(Text1, Text2);	
+	}
+    void GetItem(Player p, String Card, Item it)
+    {
+    	for(int i=0; i<p.Card.size();i++)
+    	{
+    		if(p.Card.get(i) == Card)
+    		{
+    			if(it.item_num == 0) //딜러 카드 훔쳐보기
+    			{
+    				String dealerTwo = (String) dealer.Unknown; 
+    				Toast.makeText(getApplicationContext(), dealerTwo, Toast.LENGTH_LONG);   
+    			}
+    			else if(it.item_num == 1) //마지막 카드 덱에서 바꾸기
+    			{
+    				String last_card = (String) p.Card.get(p.Card.size()-1);
+    				char var = last_card.charAt(1);
+    				if(var == 'J' || var == 'Q' || var =='K'||var == '1'){p.score -= 10;}
+    				else if(var =='A'){p.score -= 11;}
+    				else if(var == 'a'){p.score--;}
+    				else {p.score -= (var - 48);}
+    				p.nth_card--;
+    				p.Card.remove(p.Card.size()-1);
+    				p.Hit(deck.distribute_card());
+    				Me.adapter.notifyDataSetChanged();
+    			}
+    			else if(it.item_num == 2) //이겼을 때 두배 보상
+    			{
+    				p.DoubleWin = true;
+    			}
+    			else if(it.item_num == 3) //이겼을 때 세배 보상
+    			{
+    				p.TripleWin = true;
+    			}
+    			else if(it.item_num == 4)//BUST됐을 때, 마지막 카드 버리기
+    			{
+    				p.Bust_change = true;
+    			}
+    			else if(it.item_num ==5)//패배 시에 배팅 금액을 돌려받기
+    			{
+    				p.lose_protect = true;
+    			}
+    		}
+    	}
+    }
 
-    
 class ServerReceiver extends Thread{
     	//서버의 In/Out 스트림
     	Socket socket = null;
@@ -819,11 +872,18 @@ class DealerPlay extends Thread{
     	if(!Me.bust)
     	{
     		for(int i=0; i< Me.score_board.size(); i++)
-    		{int score = (Integer) Me.score_board.get(i);
-    				
+    		{
+    			int score = (Integer) Me.score_board.get(i);  				
     			if(score > dealer.score)
     			{
-    				if(Me.Double_down[i]) {Me.total = Me.total + (2*Me.bet);}
+    				if(Me.DoubleWin == true)
+    				{Me.bet *= 2; Me.DoubleWin = false;}
+    				if(Me.TripleWin == true)
+    				{Me.bet *= 3; Me.TripleWin = false;}
+    				if(Me.BlackJack == true)
+    				{Me.bet *= 1.5; Me.BlackJack = true;}
+    				if(Me.Double_down[i]) 
+    					{Me.total = Me.total + (2*Me.bet);}
     				else {Me.total = Me.total + Me.bet;}
     				music = 2;
     				musicOne = 0;
@@ -831,12 +891,11 @@ class DealerPlay extends Thread{
     			}
     			if(score < dealer.score)
     			{
+    				if(Me.lose_protect == true)
+    					continue;
     				if(Me.Double_down[i]){
-    					Me.total = Me.total - (2*Me.bet);
-    				}
-    				else{
-    					Me.total = Me.total - Me.bet;
-    				}
+    					Me.total = Me.total - (2*Me.bet);}
+    				else{Me.total = Me.total - Me.bet;}
 					music = 1;
 					musicOne = 0;
 					index = 0;
@@ -867,7 +926,7 @@ class DealerPlay extends Thread{
 		}
 	}
 }
-	class segthread extends Thread{
+class segthread extends Thread{
 		   public void run(){      
 		         while(Game_on) 
 		         {
@@ -889,15 +948,7 @@ class DealerPlay extends Thread{
 		            }
 		          }
 		   }
-	void TextLcd(){
-		String num_card = Integer.toString(deck.nth_card);
-        String remain_card = Integer.toString(deck.num_of_deck * 52 - deck.nth_card);
-        String num_deck = Integer.toString(deck.num_of_deck);   
-        String nth_game = Integer.toString(num_game);
-        Text2 = (num_card + " / " + remain_card + " / " + num_deck + " / " + nth_game);
-        TextLCDOut(Text1, Text2);	
-	}
-	class PiezoThread extends Thread{
+class PiezoThread extends Thread{
 		public void run(){
 			while(Game_on){
 				//게임이 실행중인 동안
@@ -1001,7 +1052,31 @@ class DealerPlay extends Thread{
 			}
 		}
 	}
+class Item {
 
+	int item_num = 0;
+	String Card;
+	String effect;
+	
+	Item()
+	{int itemRan = (int) (Math.random() * 6);
+	 this.item_num = itemRan;}
+	
+	String nowCard(){
+	   //이번 경기에서 어떤 카드를 받으면 어떤 아이템을 얻는지 보여줌
+	   //한 게임당 아이템 1개
+	   int cardRan = (int) (Math.random() * 52);
+	   String cardName = deck.One_Card_Set[cardRan];
+	   return cardName;}
+	
+   void make_item(){
+	   if(item_num == 0){effect = "딜러 카드 훔쳐보기";}
+	   else if(item_num == 1){effect = "마지막 카드 덱에서 바꾸기";}
+	   else if(item_num == 2){effect = "이겼을 때 보상 두 배";}
+	   else if(item_num == 3){effect = "이겼을 때 보상 세 배";}
+	   else if(item_num == 4){effect = "BUST됐을 때, 마지막 카드 버리기";}
+	   else if(item_num == 5){effect = "패배 시에 배팅 금액을 돌려받기";}}  
+}
 }
 
 
