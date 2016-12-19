@@ -9,13 +9,19 @@ public class Deck {
 			  						  "¢¾A", "¢¾2", "¢¾3", "¢¾4", "¢¾5", "¢¾6", "¢¾7", "¢¾8", "¢¾9", "¢¾10", "¢¾J", "¢¾Q", "¢¾K",
 			  						  "¢ÀA", "¢À2", "¢À3", "¢À4", "¢À5", "¢À6", "¢À7", "¢À8", "¢À9", "¢À10", "¢ÀJ", "¢ÀQ", "¢ÀK"};
 	  int num_of_deck;
+	  int num_of_shuffle;
 	  int nth_card;
+	  int nth_shuffle;
+	  
 	  ArrayList <String>Total_Card_Set;
 	  String[] Card_Shuffled;
 	
-	  Deck(int num_of_deck){
+	  Deck(int num_of_deck, int num_of_shuf){
 		  this.num_of_deck = num_of_deck;
+		  this.num_of_shuffle = num_of_shuf;
 		  this.nth_card = 0;
+		  this.nth_shuffle = 0;
+		  
 		  Total_Card_Set = new ArrayList<String>();
 		  Card_Shuffled = new String[52 * num_of_deck];
 		  for(int i=0; i<num_of_deck; i++)
@@ -35,5 +41,16 @@ public class Deck {
 	  String distribute_card()
 	  {if(nth_card < num_of_deck * 52) 
 		  return Card_Shuffled[nth_card++];
-	  else return "Deck is Empty";}
+	  else 
+	  {
+		  if(nth_shuffle != num_of_shuffle)
+		  {
+			  nth_card = 0;
+			  Shuffle();
+			  return distribute_card();
+		  }
+		  else
+			  return "GameOver";
+	  }
+	  }
 }

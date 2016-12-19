@@ -45,11 +45,13 @@ public class InGameActivity extends Activity{
 	String nickName;
 	int playerCnt = 0; //플레이어 숫자
 	int aiCnt = 0; //Ai 숫자
-	int levelCnt = 0; //Deck 숫자
+	int levelCnt = 0; //level
+	int nth_shuffle = 0;
 	int total_player = 0; //전체 참가자 수
 	int pretotal; //게임 이전 Total
 	int n_c_ready = 0; //준비된 클라이언트 수
 	int num_game = 0; //게임 횟수
+
 	int playerWin = 0;//플레이어가 이겼는지 졌는지 이기면 1, 지면2
 	boolean hitBtnClicked = false;
 	boolean stayBtnClicked = false;
@@ -228,13 +230,13 @@ public class InGameActivity extends Activity{
         //Ai 숫자 선택에 따른 Ai생성
         Create_Ai();
         
-        if(levelCnt == 1){deckNum.setText("1 DECK");}
-        else if(levelCnt == 2){deckNum.setText("2 DECK");}
-        else if(levelCnt == 4){deckNum.setText("4 DECK");}
-        else if(levelCnt == 6){deckNum.setText("6 DECK");}
+        if(levelCnt == 1){deckNum.setText("1 DECK"); deck = new Deck(levelCnt,4);}
+        else if(levelCnt == 2){deckNum.setText("2 DECK");deck = new Deck(levelCnt,2);}
+        else if(levelCnt == 4){deckNum.setText("4 DECK");deck = new Deck(levelCnt,1);}
+        else if(levelCnt == 6){deckNum.setText("6 DECK");deck = new Deck(levelCnt,1);}
               
-        deck = new Deck(levelCnt);
     	deck.Shuffle();	
+    	deck.nth_shuffle++;
     	deck.Card_Shuffled[2] = "♠A";
     	deck.Card_Shuffled[5] = "♠10";
     	
@@ -255,7 +257,7 @@ public class InGameActivity extends Activity{
         
         //Segment (세그먼트)
         SegThread.setDaemon(true);
-        SegThread.start();
+       // SegThread.start();
         
         //Piezo
     	piezo.setDaemon(true);
@@ -265,6 +267,7 @@ public class InGameActivity extends Activity{
 
 		dmthread.setDaemon(true);
         dmthread.start();
+
 		
 		ap.setDaemon(true);
         dp.setDaemon(true);                
