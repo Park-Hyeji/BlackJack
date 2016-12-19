@@ -48,10 +48,11 @@ public class InGameActivity extends Activity{
 	int pretotal; //게임 이전 Total
 	int n_c_ready = 0; //준비된 클라이언트 수
 	int num_game = 0; //게임 횟수
-	
+
 	ArrayList<Ai> Ai_list = new ArrayList<Ai>(); //Ai 배열
 	ArrayList<Player> c_list = new ArrayList<Player>(); //클라이언트 배열
-	
+
+
 	ArrayList<Player> dead_p_list = new ArrayList<Player>(); //재산이 0인 플레이어들
 	ArrayList<Ai> dead_Ai_list = new ArrayList<Ai>(); //재산이 0인 Ai들
 	
@@ -238,7 +239,8 @@ public class InGameActivity extends Activity{
     	piezo.setDaemon(true);
 		PiezoData = 0;
 		PiezoControl(PiezoData);
-		//piezo.start();
+		piezo.start();
+
 		
 		ap.setDaemon(true);
         dp.setDaemon(true);                
