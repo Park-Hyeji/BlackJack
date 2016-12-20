@@ -84,8 +84,7 @@ public class Ai extends Thread{
 			}
 		}
 	}
-	void Bust(){
-		
+	void Bust(){		
 		total = total - bet;
 		score = 0;
 		if(!Spilted.isEmpty())
@@ -126,5 +125,4 @@ public class Ai extends Thread{
 			}
 		}
 	}
-	
 }

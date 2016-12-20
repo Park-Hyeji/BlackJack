@@ -39,18 +39,18 @@ public class Deck {
 	  }
 	  
 	  String distribute_card()
-	  {if(nth_card < num_of_deck * 52) 
-		  return Card_Shuffled[nth_card++];
-	  else 
 	  {
-		  if(nth_shuffle != num_of_shuffle)
+		  if(nth_card < num_of_deck * 52) 
+			  return Card_Shuffled[nth_card++];
+		  else 
 		  {
-			  nth_card = 0;
-			  Shuffle();
-			  return distribute_card();
+			  if(nth_shuffle != num_of_shuffle)
+			  {
+				  nth_card = 0;
+				  Shuffle();
+				  return distribute_card();
+			  }else
+				  return "GameOver";
 		  }
-		  else
-			  return "GameOver";
-	  }
 	  }
 }

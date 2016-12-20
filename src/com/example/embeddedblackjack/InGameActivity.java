@@ -15,6 +15,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Message;
 import android.os.Vibrator;
 import android.util.Log;
 import android.view.KeyEvent;
@@ -53,6 +54,8 @@ public class InGameActivity extends Activity{
 	int num_game = 0; //게임 횟수
 	int total_draw; //현재 까지 뽑힌 카드 수 (종료시 사용)
 	int cur_draw = 0; //전체 뽑혀야 할 카드 수(종료시 사용)
+	boolean itemUse = false;
+	String Rank;
 	
 	int playerWin = 0;//플레이어가 이겼는지 졌는지 이기면 1, 지면2
 	boolean hitBtnClicked = false;
@@ -103,7 +106,6 @@ public class InGameActivity extends Activity{
 	protected static final int DOT_DIALOG_SIMPLE_MESSAGE = 0;
 	protected static final int DOT_DIALOG_ERROR_MESSAGE = 1;
 	String result = new String();
-	Handler handler = new Handler();
 	
 	public native int DotMatrixControl(String data);
 	
@@ -253,6 +255,7 @@ public class InGameActivity extends Activity{
         dealer.adapter = new ArrayAdapter<String>(this,R.layout.simpleitem, dealer.Card);
         ListView dealer_spot = (ListView)findViewById(R.id.dealer);
         dealer_spot.setAdapter(dealer.adapter);
+        
         //내장 기기 부분
         //Vibrator (진동)
         mVibrator = (Vibrator)getSystemService(Context.VIBRATOR_SERVICE); //진동
@@ -263,21 +266,22 @@ public class InGameActivity extends Activity{
         
         //Piezo
     	piezo.setDaemon(true);
-		PiezoData = 0;
-		PiezoControl(PiezoData);
 		piezo.start();
-
-		exit.setDaemon(true);
-		exit.start();
-		
+				
 		dmthread.setDaemon(true);
         dmthread.start();
+        
+		PiezoData = 0;
+		PiezoControl(PiezoData);
+        
+		exit.setDaemon(true);
+		exit.start();
 		
 		ap.setDaemon(true);
         dp.setDaemon(true);                
         ap.start();
         dp.start();
-
+        
      	//배팅 버튼  부분
      	chip_1.setOnClickListener(new View.OnClickListener() {
 			public void onClick(View arg0) {
@@ -335,7 +339,7 @@ public class InGameActivity extends Activity{
 				//index = 0;
 				//musicOne = 0;
 
-				playerWin = 0; //알 수 없
+				playerWin = 0; //알 수 없음
 				num_game++;
 
 				if(Me.bet != 0)
@@ -366,22 +370,22 @@ public class InGameActivity extends Activity{
 				Me.adapter.notifyDataSetChanged();		
 				GetItem(Me,itemcard,item);
 				if(Me.score == 21) Me.BlackJack = true;
-				if(Me.bust){
-					
-			    		hitBtn.setEnabled(false);
-			    		stayBtn.setEnabled(false);
-			    		splitBtn.setEnabled(false);
-			    		doubleBtn.setEnabled(false);
+				if(Me.bust)
+				{
+					hitBtn.setEnabled(false);
+			    	stayBtn.setEnabled(false);
+			    	splitBtn.setEnabled(false);
+			    	doubleBtn.setEnabled(false);
     					
-			    		long[] pattern = {500, 200, 500, 200};
-    					mVibrator.vibrate(pattern, -1);
-						ai_turn = true;
-						music = 1;
-						musicOne = 0;
-						index = 0;
-					}
-				TextLcd();
+			    	long[] pattern = {500, 200, 500, 200};
+			    	mVibrator.vibrate(pattern, -1);
+					ai_turn = true;
+					music = 1;
+					musicOne = 0;
+					index = 0;
 				}
+				TextLcd();
+			}
 	
 		});
 		stayBtn.setOnClickListener(new Button.OnClickListener()
@@ -413,7 +417,9 @@ public class InGameActivity extends Activity{
 			    	doubleBtn.setEnabled(false);
         			Me.Stay();
         			ai_turn = true;
-        		}}});
+        		}
+        	}
+		});
         splitBtn.setOnClickListener(new Button.OnClickListener()
         { 
         	public void onClick(View arg0) {
@@ -491,195 +497,195 @@ public class InGameActivity extends Activity{
     }
      
     void init(){
-			Toast.makeText(getApplicationContext(), "게임이 시작됩니다.", Toast.LENGTH_LONG).show();
-			num_game++;//게임 횟수 증가
-			//모든 플레이어 및 Ai 준비
-			Me.Ready(); //본인
-			dealer.Ready(); //딜러
-			if(!c_list.isEmpty())
-			{for(int i=0; i< c_list.size(); i++) //클라이언트 존재시 클라이언트
-			 c_list.get(i).Ready();}
-			for(int i=0; i<Ai_list.size(); i++) //Ai
-			{Ai_list.get(i).Ready();
-			 Ai_list.get(i).bet();}
-			
-			item = new Item();
-			item.make_item();
-	    	itemcard = item.nowCard();
-	    	itemeffect = item.effect;
-	    	cardAndItem.setText("'"+itemcard+"' 카드 획득시 \n '"+itemeffect+"' 효과 얻음");		
-			
-			//첫 카드 받기
-			Me.Hit(deck.distribute_card());
-			Me.adapter.notifyDataSetChanged();
-			if(!c_list.isEmpty())
-			{for(int i=0; i< c_list.size(); i++)
-				c_list.get(i).Hit(deck.distribute_card());}
-			for(int i=0; i< Ai_list.size(); i++)
-			{Ai_list.get(i).Hit(deck.distribute_card());
-			 Ai_list.get(i).adapter.notifyDataSetChanged();}
-	    	
-	    	dealer.recieve(deck.distribute_card());
-	    	dealer.adapter.notifyDataSetChanged();
-	    	///////////////////////////////////////////////
-	    	
-	    	//두 번째 카드 받기
-	    	Me.Hit(deck.distribute_card());
-	    	Me.adapter.notifyDataSetChanged();
-			
-	    	if(!c_list.isEmpty())
-			{for(int i=0; i< c_list.size(); i++)
-				c_list.get(i).Hit(deck.distribute_card());}
-	    	
-			for(int i=0; i< Ai_list.size(); i++)			
-			{Ai_list.get(i).Hit(deck.distribute_card());
-			 Ai_list.get(i).adapter.notifyDataSetChanged();}
-	    	
-			dealer.Unknown = deck.distribute_card();
-	    	dealer.Card.add(1,"unknown");
-	    	dealer.adapter.notifyDataSetChanged();
-	    	////////////////////////////////////////////////
-	    	GetItem(Me,itemcard,item);
-	    	//BlackJack 확인/////////////////////////////////
+    	Toast.makeText(getApplicationContext(), "게임이 시작됩니다.", Toast.LENGTH_LONG).show();
+		num_game++;//게임 횟수 증가
+		//모든 플레이어 및 Ai 준비
+		Me.Ready(); //본인
+		dealer.Ready(); //딜러
+		if(!c_list.isEmpty())
+		{for(int i=0; i< c_list.size(); i++) //클라이언트 존재시 클라이언트
+		 c_list.get(i).Ready();}
+		for(int i=0; i<Ai_list.size(); i++) //Ai
+		{Ai_list.get(i).Ready();
+		 Ai_list.get(i).bet();}
+		
+		item = new Item();
+		item.make_item();
+    	itemcard = item.nowCard();
+    	itemeffect = item.effect;
+    	cardAndItem.setText("'"+itemcard+"' 카드 획득시 \n '"+itemeffect+"' 효과 얻음");		
+		
+		//첫 카드 받기
+		Me.Hit(deck.distribute_card());
+		Me.adapter.notifyDataSetChanged();
+		if(!c_list.isEmpty())
+		{for(int i=0; i< c_list.size(); i++)
+			c_list.get(i).Hit(deck.distribute_card());}
+		for(int i=0; i< Ai_list.size(); i++)
+		{Ai_list.get(i).Hit(deck.distribute_card());
+		 Ai_list.get(i).adapter.notifyDataSetChanged();}
+    	
+    	dealer.recieve(deck.distribute_card());
+    	dealer.adapter.notifyDataSetChanged();
+    	///////////////////////////////////////////////
+    	
+    	//두 번째 카드 받기
+    	Me.Hit(deck.distribute_card());
+    	Me.adapter.notifyDataSetChanged();
+		
+    	if(!c_list.isEmpty())
+		{for(int i=0; i< c_list.size(); i++)
+			c_list.get(i).Hit(deck.distribute_card());}
+    	
+		for(int i=0; i< Ai_list.size(); i++)			
+		{Ai_list.get(i).Hit(deck.distribute_card());
+		 Ai_list.get(i).adapter.notifyDataSetChanged();}
+    	
+		dealer.Unknown = deck.distribute_card();
+    	dealer.Card.add(1,"unknown");
+    	dealer.adapter.notifyDataSetChanged();
+    	////////////////////////////////////////////////
+    	GetItem(Me,itemcard,item);
+    	//BlackJack 확인/////////////////////////////////
 
-	    	if(Me.score == 21) {Me.BlackJack = true; playerWin = 1; FLEDControl(7); music = 6; musicOne = 0; index = 0;}
+    	if(Me.score == 21) {Me.BlackJack = true; playerWin = 1; FLEDControl(7); music = 6; musicOne = 0; index = 0;}
 
-	    	if(!c_list.isEmpty())
-			{for(int i=0; i< c_list.size(); i++)
-	    		{if(c_list.get(i).score == 21)
-	    			c_list.get(i).BlackJack = true;}}
-			for(int i=0; i< Ai_list.size(); i++)			
-			{
-				if(Ai_list.get(i).score == 21)
-					Ai_list.get(i).BlackJack = true;}
-			////////////////////////////////////////////////
+    	if(!c_list.isEmpty())
+		{for(int i=0; i< c_list.size(); i++)
+    		{if(c_list.get(i).score == 21)
+    			c_list.get(i).BlackJack = true;}}
+		for(int i=0; i< Ai_list.size(); i++)			
+		{
+			if(Ai_list.get(i).score == 21)
+				Ai_list.get(i).BlackJack = true;}
+		////////////////////////////////////////////////
 			
-			///////////////Dealer Black Jack, Insurance, EvenMoney 확인////////////
-	    	char dfc = ((String) dealer.Card.get(0)).charAt(1);
-	    	if(dfc == 'A' || dfc == '1'|| dfc == 'J'||dfc == 'Q'||dfc == 'K')
-	    	{
-	    		//Insuracne, EvenMoney
-	    		//Insurance - 돈 걸기
-	    		if(Me.BlackJack == false){
-	    			AlertDialog.Builder alert= new AlertDialog.Builder(this);
-		    		alert.setTitle("Insurance");
-		    		alert.setMessage("Insurance 하시겠습니까?");
-		    		final EditText money = new EditText(this);
-		    		alert.setView(money);
-		    		
-		    		alert.setPositiveButton("ok", new DialogInterface.OnClickListener() {		
-						public void onClick(DialogInterface arg0, int arg1) {
-							// TODO Auto-generated method stub
-							String ins_mon = money.getText().toString();
-							//Toast.makeText(getApplicationContext(), ins_mon, Toast.LENGTH_LONG).show();
-							insuranceMoney = Integer.parseInt(ins_mon);
-							//상대가 블랙잭 건 돈을 잃고, 인슈어런스를 받음
-							if(dealer.BlackJack == true){
-								Me.insurance_yes(insuranceMoney);
-								total_money.setText(Integer.toString(Me.total));
-							}else{
-								//상대가 블랙잭이 아니면, 인슈어런스를 잃는다
-								Me.insurance_no(insuranceMoney);
-								total_money.setText(Integer.toString(Me.total));
-							}
-						}
-					}
-					);
-		    		
-		    		alert.setNegativeButton("no", new DialogInterface.OnClickListener() {
-						
-						public void onClick(DialogInterface arg0, int arg1) {
-							// TODO Auto-generated method stub
-							
-						}
-					});
-		    		alert.show();
-	    		}else{
-	    			//EvenMoney
-	    			AlertDialog.Builder alert= new AlertDialog.Builder(this);
-		    		alert.setTitle("Even Money");
-		    		alert.setMessage("Even Money");
-		    		
-		    		alert.setPositiveButton("ok", new DialogInterface.OnClickListener() {
-						
-						public void onClick(DialogInterface arg0, int arg1) {
-							// TODO Auto-generated method stub
-							//배팅 금액 그대로 받고 게임 끝
-							Me.evenmoney_yes();
-							Me.bust = true;
+		///////////////Dealer Black Jack, Insurance, EvenMoney 확인////////////
+    	char dfc = ((String) dealer.Card.get(0)).charAt(1);
+    	if(dfc == 'A' || dfc == '1'|| dfc == 'J'||dfc == 'Q'||dfc == 'K')
+    	{
+    		//Insuracne, EvenMoney
+    		//Insurance - 돈 걸기
+    		if(Me.BlackJack == false)
+    		{
+    			AlertDialog.Builder alert= new AlertDialog.Builder(this);
+	    		alert.setTitle("Insurance");
+	    		alert.setMessage("금액 입력\n 딜러 카드 : "+(String) dealer.Card.get(0));
+	    		final EditText money = new EditText(this);
+	    		alert.setView(money);
+	    		insuranceBtnClicked = true;
+	    		alert.setPositiveButton("ok", new DialogInterface.OnClickListener() {
+					public void onClick(DialogInterface arg0, int arg1) {
+						// TODO Auto-generated method stub
+						String ins_mon = money.getText().toString();
+						//Toast.makeText(getApplicationContext(), ins_mon, Toast.LENGTH_LONG).show();
+						insuranceMoney = Integer.parseInt(ins_mon);
+						//상대가 블랙잭 건 돈을 잃고, 인슈어런스를 받음
+						if(dealer.BlackJack == true){
+							Me.insurance_yes(insuranceMoney);
+							total_money.setText(Integer.toString(Me.total));
+						}else{
+							//상대가 블랙잭이 아니면, 인슈어런스를 잃는다
+							Me.insurance_no(insuranceMoney);
 							total_money.setText(Integer.toString(Me.total));
 						}
-					});
-		    		alert.setNegativeButton("no", new DialogInterface.OnClickListener() {
+					}
+				});
+	    		
+	    		alert.setNegativeButton("no", new DialogInterface.OnClickListener() {
+					
+					public void onClick(DialogInterface arg0, int arg1) {
+						// TODO Auto-generated method stub
 						
-						public void onClick(DialogInterface arg0, int arg1) {
-							// TODO Auto-generated method stub
-							//게임 그대로
-						}
-					});
-		    		alert.show();
-	    		}
-	    		
-	    		
-	    		//EvenMoney - yes/no
-	    		dealer.Card.remove(1);
-	         	dealer.recieve(dealer.Unknown);
-	         	dealer.adapter.notifyDataSetChanged();
-	         	
-	         	if(dealer.score == 21)
-	         	{
-	         		dealer.BlackJack = true;
-	         		playerWin = 2; //플레이어 짐
-	         		//FLEDControl(8);
-	         		music = 1;
-	         		musicOne = 0;
-	         		index = 0;
-	         		Toast.makeText(getApplicationContext(), Integer.toString(dealer.score), Toast.LENGTH_LONG);
-	         	}
-	         }
-	    	///////////////////////////////////////////////
+					}
+				});
+	    		alert.show();
+    		}else{
+    			//EvenMoney
+    			AlertDialog.Builder alert= new AlertDialog.Builder(this);
+	    		alert.setTitle("Even Money");
+	    		alert.setMessage("Even Money");
+	    		evenmoneyBtnClicked = true;
+	    		alert.setPositiveButton("ok", new DialogInterface.OnClickListener() {
+					
+					public void onClick(DialogInterface arg0, int arg1) {
+						// TODO Auto-generated method stub
+						//배팅 금액 그대로 받고 게임 끝
+						Me.evenmoney_yes();
+						Me.bust = true;
+						total_money.setText(Integer.toString(Me.total));
+					}
+				});
+	    		alert.setNegativeButton("no", new DialogInterface.OnClickListener() {
+					
+					public void onClick(DialogInterface arg0, int arg1) {
+						// TODO Auto-generated method stub
+						//게임 그대로
+					}
+				});
+	    		alert.show();
+    		}
+    				
+    		//EvenMoney - yes/no
+    		dealer.Card.remove(1);
+         	dealer.recieve(dealer.Unknown);
+         	dealer.adapter.notifyDataSetChanged();
+         	
+         	if(dealer.score == 21)
+         	{
+         		dealer.BlackJack = true;
+         		playerWin = 2; //플레이어 짐
+         		//FLEDControl(8);
+         		music = 1;
+         		musicOne = 0;
+         		index = 0;
+         		Toast.makeText(getApplicationContext(), Integer.toString(dealer.score), Toast.LENGTH_LONG);
+         	}
+         }
+    	///////////////////////////////////////////////
 	    	
-	    	//////////////////비교/////////////////////////
-	    	if(dealer.BlackJack)
-	    	{
-	    		if(!Me.BlackJack){Me.total -= Me.bet;}
-	    		Me.bet = 0;
-    			total_money.setText(Integer.toString(Me.total));
-    			bet_money.setText(Integer.toString(Me.bet));
-    			
-		    	if(!c_list.isEmpty())
-				{
-		    		for(int i=0; i< c_list.size(); i++)
-		    		{
-		    			if(!c_list.get(i).BlackJack)
-		    				c_list.get(i).total -= c_list.get(i).bet;
-		    			c_list.get(i).bet = 0;
-		    		}
-		    	}
-		    	
-				for(int i=0; i< Ai_list.size(); i++)			
-				{
-					if(!Ai_list.get(i).BlackJack)
-						Ai_list.get(i).total -= Ai_list.get(i).bet;
-				}
-				
-				chip_1.setEnabled(true);
-				chip_5.setEnabled(true);
-				chip_20.setEnabled(true);
-				chip_100.setEnabled(true);
-				chip_500.setEnabled(true);
-				gameStartBtn.setEnabled(true);
-				
-		    	hitBtn.setEnabled(false);
-		    	stayBtn.setEnabled(false);
-		    	splitBtn.setEnabled(false);
-		    	doubleBtn.setEnabled(false);
+    	//////////////////비교/////////////////////////
+    	if(dealer.BlackJack)
+    	{
+    		if(!Me.BlackJack){Me.total -= Me.bet;}
+    		Me.bet = 0;
+			total_money.setText(Integer.toString(Me.total));
+			bet_money.setText(Integer.toString(Me.bet));
+			
+	    	if(!c_list.isEmpty())
+			{
+	    		for(int i=0; i< c_list.size(); i++)
+	    		{
+	    			if(!c_list.get(i).BlackJack)
+	    				c_list.get(i).total -= c_list.get(i).bet;
+	    			c_list.get(i).bet = 0;
+	    		}
 	    	}
-	    	/////////////////////////////////////////////////////
-	    	TextLcd();
+	    	
+			for(int i=0; i< Ai_list.size(); i++)			
+			{
+				if(!Ai_list.get(i).BlackJack)
+					Ai_list.get(i).total -= Ai_list.get(i).bet;
+			}
+			
+			chip_1.setEnabled(true);
+			chip_5.setEnabled(true);
+			chip_20.setEnabled(true);
+			chip_100.setEnabled(true);
+			chip_500.setEnabled(true);
+			gameStartBtn.setEnabled(true);
+			
+	    	hitBtn.setEnabled(false);
+	    	stayBtn.setEnabled(false);
+	    	splitBtn.setEnabled(false);
+	    	doubleBtn.setEnabled(false);
+    	}
+    	/////////////////////////////////////////////////////
+    	TextLcd();
 	}
     void Set_View(TextView v)
     {v.setText("ScoreBoard");}
+    
     void Create_Server(){
     	new Thread(new Runnable(){
     		public void run() {
@@ -753,11 +759,19 @@ public class InGameActivity extends Activity{
     		{
     			if(it.item_num == 0) //딜러 카드 훔쳐보기
     			{
+    				itemUse = true;
+    				music = 4;
+    				index = 0;
+    				musicOne = 0;
     				String dealerTwo = (String) dealer.Unknown; 
     				Toast.makeText(getApplicationContext(), dealerTwo, Toast.LENGTH_LONG);   
     			}
     			else if(it.item_num == 1) //마지막 카드 덱에서 바꾸기
     			{
+    				itemUse = true;
+    				music = 4;
+    				index = 0;
+    				musicOne = 0;
     				String last_card = (String) p.Card.get(p.Card.size()-1);
     				char var = last_card.charAt(1);
     				if(var == 'J' || var == 'Q' || var =='K'||var == '1'){p.score -= 10;}
@@ -771,25 +785,41 @@ public class InGameActivity extends Activity{
     			}
     			else if(it.item_num == 2) //이겼을 때 두배 보상
     			{
+    				itemUse = true;
+    				music = 4;
+    				index = 0;
+    				musicOne = 0;
     				p.DoubleWin = true;
     			}
     			else if(it.item_num == 3) //이겼을 때 세배 보상
     			{
+    				itemUse = true;
+    				music = 4;
+    				index = 0;
+    				musicOne = 0;
     				p.TripleWin = true;
     			}
     			else if(it.item_num == 4)//BUST됐을 때, 마지막 카드 버리기
     			{
+    				itemUse = true;
+    				music = 4;
+    				index = 0;
+    				musicOne = 0;
     				p.Bust_change = true;
     			}
     			else if(it.item_num ==5)//패배 시에 배팅 금액을 돌려받기
     			{
+    				itemUse = true;
+    				music = 4;
+    				index = 0;
+    				musicOne = 0;
     				p.lose_protect = true;
     			}
     		}
     	}
     }
 
-class ServerReceiver extends Thread{
+    class ServerReceiver extends Thread{
     	//서버의 In/Out 스트림
     	Socket socket = null;
     	boolean Connected = true; 
@@ -826,267 +856,266 @@ class ServerReceiver extends Thread{
 				// TODO Auto-generated catch block
 				e.printStackTrace();}
     	}
-}
-class Send_game_info extends Thread{
-	public void run()
-	{
-		while(Game_on)
-		{
-			if(playerCnt-1 == c_list.size())
+    }
+    class Send_game_info extends Thread{
+    	public void run()
+    	{
+    		while(Game_on)
+    		{
+				if(playerCnt-1 == c_list.size())
+				{
+					SendtoAll("playerCnt" + Integer.toString(playerCnt));
+					try {
+						sleep(1000);
+					} catch (InterruptedException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+					SendtoAll("aiCnt" + Integer.toString(aiCnt));
+					break;
+				}
+			}
+		}
+	}
+    class ClientReady extends Thread{
+    	public void run()
+    	{
+    		while(Game_on)
+    		{
+				if(n_c_ready == playerCnt - 1)
+				{
+			    	new Thread(new Runnable() {
+			       	    public void run() {
+				  		    runOnUiThread(new Runnable() {   	  		      
+				  		       public void run() {
+				  		        // TODO Auto-generated method stub
+				  		    	   gameStartBtn.setEnabled(true);
+				  		       }
+			  		       });
+			       	    }//run method
+			    	}).start();
+				}
+			}
+		}
+	}
+    class GStart extends Thread{}
+    class AiPlay extends Thread{
+	    void Ai_turn(final Ai ai) 
+	    {
+			try {sleep(1000);} catch(InterruptedException e) 
+			{// TODO Auto-generated catch block
+				e.printStackTrace();}
+	    	while(!ai.bust && !ai.stay){   		
+	    		if(ai.score <= 11)
+	    		{Hit_Card(ai);}
+	    		else if(ai.score > 11 && ai.score < 16)
+	    		{
+	    			double temp;
+	    			temp = Math.random();
+	    			if(temp <= ai.prob_hit_12)
+	    			{Hit_Card(ai);}
+	    			else
+	    				ai.stay = true;
+	    		}
+	    		else if(ai.score >= 16 && ai.score <= 19)
+	    		{
+	    			double temp;
+	    			temp = Math.random();
+	    			if(temp <= ai.prob_hit_16)
+	    			{Hit_Card(ai);}
+	    			else
+	    				ai.stay = true;
+	    		}
+	    		else 
+	    			ai.stay = true;
+	    		try {sleep(1000);} catch(InterruptedException e) 
+	    		{// TODO Auto-generated catch block
+	    			e.printStackTrace();}
+	    	}
+	    }
+	    
+	    void Hit_Card(final Ai ai)
+	    {
+	    	ai.Hit(deck.distribute_card());
+	    	TextLcd();
+	    	new Thread(new Runnable() {    
+		       	    public void run() {
+	   	  		    runOnUiThread(new Runnable() {    	  		      
+	    	  		       public void run() {
+	    	  		        // TODO Auto-generated method stub
+	    	  		    	 ai.adapter.notifyDataSetChanged();
+	    	  		       }
+	    	  		      });
+		       	   }//run method
+		    }).start();
+	    }
+	    public void run()
+	    {
+	    	while(true)
+	    	{
+	    		if(ai_turn)
+	    		{
+	    			for(int i=0; i<Ai_list.size(); i++)
+	    				{Ai_turn(Ai_list.get(i));}
+	        		ai_turn = false;
+	        		d_turn = true;
+	    		}
+	    	}
+	    }
+	}
+    class DealerPlay extends Thread{
+    	void UI_change(){
+    		new Thread(new Runnable() {    
+	       	    public void run() {
+		  		    runOnUiThread(new Runnable() {	  		      
+		  		       public void run() {
+		  		        // TODO Auto-generated method stub
+		  		    	   dealer.adapter.notifyDataSetChanged();
+	  		    	   }
+	  		       });
+	       	   }//run method
+    		}).start();
+		}
+    	
+    	void Set_Ready(){
+			n_c_ready = 0;
+			new Thread(new Runnable() {
+			public void run(){
+				runOnUiThread(new Runnable() { 	  		      
+					public void run() {
+					     // TODO Auto-generated method stub
+					     total_money.setText(Integer.toString(Me.total));
+					     bet_money.setText(Integer.toString(Me.bet));
+			      		 chip_1.setEnabled(true);
+			      		 chip_5.setEnabled(true);
+			      		 chip_20.setEnabled(true);
+			      		 chip_100.setEnabled(true);
+			      		 chip_500.setEnabled(true);
+			      		 if(playerCnt == 1)
+			      			 gameStartBtn.setEnabled(true);      		 
+			      		 hitBtn.setEnabled(false);
+			      		 stayBtn.setEnabled(false);
+			      		 splitBtn.setEnabled(false);
+			      		 doubleBtn.setEnabled(false);
+		      		 }
+				 });
+			 }//run method
+		  }).start();
+		}
+    	void Dealer_turn()
+    	{
+			if(dealer.Card.get(1) == "unknown")
 			{
-				SendtoAll("playerCnt" + Integer.toString(playerCnt));
-				try {
-					sleep(1000);
+				dealer.Card.remove(1);
+				dealer.recieve(dealer.Unknown);
+				UI_change();
+			}
+
+	    	while(dealer.score <= 16 && !dealer.bust)
+	    	{
+	    		dealer.recieve(deck.distribute_card());
+	        	TextLcd();
+	        	UI_change();
+	    		//SendtoAll((String) dealer.Card.get(dealer.nth_card-1));
+	    		try {
+					sleep(2000);
 				} catch (InterruptedException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
-				SendtoAll("aiCnt" + Integer.toString(aiCnt));
-				break;
-			}
-		}
-	}
-}
-class ClientReady extends Thread{
-	public void run()
-	{
-		while(Game_on)
-		{
-			if(n_c_ready == playerCnt - 1)
+	    	}
+	    	if(!Me.bust)
+	    	{
+	    		for(int i=0; i< Me.score_board.size(); i++)
+	    		{
+	    			int score = (Integer) Me.score_board.get(i);  				
+	    			if(score > dealer.score)
+	    			{
+	    				if(Me.DoubleWin == true)
+	    				{Me.bet *= 2; Me.DoubleWin = false;}
+	    				if(Me.TripleWin == true)
+	    				{Me.bet *= 3; Me.TripleWin = false;}
+	    				if(Me.BlackJack == true)
+	    				{Me.bet *= 1.5; Me.BlackJack = true;}
+	    				if(Me.Double_down[i]) 
+	    					{Me.total = Me.total + (2*Me.bet);}
+	    				else {Me.total = Me.total + Me.bet;}
+	    				music = 2;
+	    				musicOne = 0;
+	    				index = 0;
+	    				playerWin = 1;
+	    				FLEDControl(7);
+	    			}
+	    			if(score < dealer.score)
+	    			{
+	    				if(Me.lose_protect == true)
+	    					continue;
+	    				if(Me.Double_down[i]){
+	    					Me.total = Me.total - (2*Me.bet);}
+	    				else{Me.total = Me.total - Me.bet;}
+						music = 1;
+						musicOne = 0;
+						index = 0;
+						playerWin = 2;
+						FLEDControl(8);
+	    				long[] pattern = {500, 200, 500, 200};
+	                	mVibrator.vibrate(pattern, -1);
+	    			}
+	    		}
+	    	}
+	    	int iter = 0;
+	    	for(int i=0; i<Ai_list.size(); i++)
+	    	{
+	    		if(Ai_list.get(iter).score > dealer.score)
+	    			Ai_list.get(iter).total = Ai_list.get(iter).total + Ai_list.get(iter).bet;
+	    		if(Ai_list.get(iter).score < dealer.score)
+	    			Ai_list.get(iter).total = Ai_list.get(iter).total - Ai_list.get(iter).bet;
+	    		
+	    		if(Ai_list.get(iter).total <= 0)
+	    			{dead_Ai_list.add(Ai_list.get(iter));
+	    				Ai_list.remove(iter);}
+	    		else iter++;
+	    	}
+	    	Me.bet = 0;
+	    	n_c_ready = 0;
+	    	Set_Ready();
+	    }
+    	public void run(){
+			while(true)
 			{
-		    	new Thread(new Runnable() {    
-		       	    public void run() {
-			  		    runOnUiThread(new Runnable() {    	  		      
-			  		       public void run() {
-			  		        // TODO Auto-generated method stub
-			  		    	 gameStartBtn.setEnabled(true);
-			  		       }
-			  		      });
-		       	   }//run method
-		    }).start();
-			}
-		}
-	}
-}
-class GStart extends Thread{}
-class AiPlay extends Thread{
-    void Ai_turn(final Ai ai) 
-    {
-		try {sleep(1000);} catch(InterruptedException e) 
-		{// TODO Auto-generated catch block
-			e.printStackTrace();}
-    	while(!ai.bust && !ai.stay){   		
-    		if(ai.score <= 11)
-    		{Hit_Card(ai);}
-    		else if(ai.score > 11 && ai.score < 16)
-    		{
-    			double temp;
-    			temp = Math.random();
-    			if(temp <= ai.prob_hit_12)
-    			{Hit_Card(ai);}
-    			else
-    				ai.stay = true;
-    		}
-    		else if(ai.score >= 16 && ai.score <= 19)
-    		{
-    			double temp;
-    			temp = Math.random();
-    			if(temp <= ai.prob_hit_16)
-    			{Hit_Card(ai);}
-    			else
-    				ai.stay = true;
-    		}
-    		else 
-    			ai.stay = true;
-    		try {sleep(1000);} catch(InterruptedException e) 
-    		{// TODO Auto-generated catch block
-    			e.printStackTrace();}
-    	}
-    }
-    void Hit_Card(final Ai ai)
-    {
-    	ai.Hit(deck.distribute_card());
-    	TextLcd();
-    	new Thread(new Runnable() {    
-	       	    public void run() {
-   	  		    runOnUiThread(new Runnable() {    	  		      
-    	  		       public void run() {
-    	  		        // TODO Auto-generated method stub
-    	  		    	 ai.adapter.notifyDataSetChanged();
-    	  		       }
-    	  		      });
-	       	   }//run method
-	    }).start();
-    }
-    public void run()
-    {
-    	while(true)
-    	{
-    		if(ai_turn)
-    		{
-    			for(int i=0; i<Ai_list.size(); i++)
-    				{Ai_turn(Ai_list.get(i));}
-        		ai_turn = false;
-        		d_turn = true;
-    		}
-    	}
-    }
-}
-class DealerPlay extends Thread{
-	void UI_change(){
-    	new Thread(new Runnable() {    
-       	    public void run() {
-	  		    runOnUiThread(new Runnable() {    	  		      
-	  		       public void run() {
-	  		        // TODO Auto-generated method stub
-	  		    	 dealer.adapter.notifyDataSetChanged();
-	  		       }
-	  		      });
-       	   }//run method
-    }).start();
-	}
-	void Set_Ready(){
-		  n_c_ready = 0;
-		  new Thread(new Runnable() {    
-			 public void run(){
-				 runOnUiThread(new Runnable() {    	  		      
-				 public void run() {
-		     // TODO Auto-generated method stub
-		     total_money.setText(Integer.toString(Me.total));
-		     bet_money.setText(Integer.toString(Me.bet));
-      		 chip_1.setEnabled(true);
-      		 chip_5.setEnabled(true);
-      		 chip_20.setEnabled(true);
-      		 chip_100.setEnabled(true);
-      		 chip_500.setEnabled(true);
-      		 if(playerCnt == 1)
-      			 gameStartBtn.setEnabled(true);
-      		 
-      		 hitBtn.setEnabled(false);
-      		 stayBtn.setEnabled(false);
-      		 splitBtn.setEnabled(false);
-      		 doubleBtn.setEnabled(false);
-		       }
-		      });
- 	   }//run method
-		}).start();
-	}
-	void Dealer_turn()
-    {
-		if(dealer.Card.get(1) == "unknown")
-		{
-			dealer.Card.remove(1);
-			dealer.recieve(dealer.Unknown);
-			UI_change();
-		}
-		
-    	
-    	while(dealer.score <= 16 && !dealer.bust)
-    	{
-    		dealer.recieve(deck.distribute_card());
-        	TextLcd();
-        	UI_change();
-    		//SendtoAll((String) dealer.Card.get(dealer.nth_card-1));
-    		try {
-				sleep(2000);
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				if(d_turn)
+				{
+					Dealer_turn();
+					d_turn = false;
+				}
 			}
     	}
-    	if(!Me.bust)
-    	{
-    		for(int i=0; i< Me.score_board.size(); i++)
-    		{
-    			int score = (Integer) Me.score_board.get(i);  				
-    			if(score > dealer.score)
-    			{
-    				if(Me.DoubleWin == true)
-    				{Me.bet *= 2; Me.DoubleWin = false;}
-    				if(Me.TripleWin == true)
-    				{Me.bet *= 3; Me.TripleWin = false;}
-    				if(Me.BlackJack == true)
-    				{Me.bet *= 1.5; Me.BlackJack = true;}
-    				if(Me.Double_down[i]) 
-    					{Me.total = Me.total + (2*Me.bet);}
-    				else {Me.total = Me.total + Me.bet;}
-    				music = 2;
-    				musicOne = 0;
-    				index = 0;
-    				playerWin = 1;
-    				FLEDControl(7);
-    			}
-    			if(score < dealer.score)
-    			{
-    				if(Me.lose_protect == true)
-    					continue;
-    				if(Me.Double_down[i]){
-    					Me.total = Me.total - (2*Me.bet);}
-    				else{Me.total = Me.total - Me.bet;}
-					music = 1;
-					musicOne = 0;
-					index = 0;
-					playerWin = 2;
-					FLEDControl(8);
-    				long[] pattern = {500, 200, 500, 200};
-                	mVibrator.vibrate(pattern, -1);
-    			}
-    		}
-    	}
-    	int iter = 0;
-    	for(int i=0; i<Ai_list.size(); i++)
-    	{
-    		if(Ai_list.get(iter).score > dealer.score)
-    			Ai_list.get(iter).total = Ai_list.get(iter).total + Ai_list.get(iter).bet;
-    		if(Ai_list.get(iter).score < dealer.score)
-    			Ai_list.get(iter).total = Ai_list.get(iter).total - Ai_list.get(iter).bet;
-    		
-    		if(Ai_list.get(iter).total <= 0)
-    			{dead_Ai_list.add(Ai_list.get(iter));
-    				Ai_list.remove(iter);}
-    		else iter++;
-    	}
-    	Me.bet = 0;
-    	n_c_ready = 0;
-    	Set_Ready();
     }
-	public void run(){
-		while(true)
-		{
-			if(d_turn)
+    class segthread extends Thread{
+		public void run(){      
+			while(Game_on) 
 			{
-				Dealer_turn();
-				d_turn = false;
+	            SegmentControl(Me.total);
+	            int tmp;
+	            if(pretotal > Me.total){
+	            	tmp = Me.total;
+	               	while(pretotal != tmp) {
+	                	SegmentControl(pretotal);
+	                	pretotal -= 2;
+	                }
+	            }else if(pretotal < Me.total){
+	               tmp = Me.total;
+	               while(pretotal != tmp) {
+	               		SegmentControl(pretotal);
+	                  	pretotal += 2;
+	               }
+				}
 			}
 		}
-	}
-}
-class segthread extends Thread{
-		   public void run(){      
-		         while(Game_on) 
-		         {
-		            SegmentControl(Me.total);
-		            int tmp;
-		            if(pretotal > Me.total){
-		               tmp = Me.total;
-		               while(pretotal != tmp) {
-		                  SegmentControl(pretotal);
-		                  pretotal -= 2;
-		               }
-		            }else if(pretotal < Me.total){
-		               tmp = Me.total;
-		               while(pretotal != tmp) {
-		                  SegmentControl(pretotal);
-		                  pretotal += 2;
-		               }
-		              }
-		            }
-		          }
-		   }
-class PiezoThread extends Thread{
+    }
+    class PiezoThread extends Thread{
 		public void run(){
 			while(Game_on){
-				/*피에조 시끄러
 				//게임이 실행중인 동안
 				if(music == 1 && musicOne == 0){
 					int noteDuration = 1000/duration1[index];
@@ -1185,27 +1214,29 @@ class PiezoThread extends Thread{
 						musicOne = 1;
 					}
 				}
-				*/
 			}
 		}
 	}
 	class DotMatrixThread extends Thread{
     	public void run(){
     		while(Game_on){
-	    		//DotMatrix
-	    		//if(){
-	        	//	DotMatrixControl("xx"); //뿅뿅
-				//}else if(Me.BlackJack == true){
-	    		if(Me.BlackJack == true){
+    			/*닷매트릭스*/
+	    		if(itemUse == true){
+	        		DotMatrixControl("xx"); //뿅뿅
+				}else if(Me.BlackJack == true){
 	        		DotMatrixControl("yz{|"); //♥◇♣♤
+	        		itemUse = false;
 	        		hitBtnClicked = false;
 	        		stayBtnClicked = false;
 	        		splitBtnClicked = false;
 	        		doubleBtnClicked = false;
 	        		evenmoneyBtnClicked = false;
 	        		insuranceBtnClicked = false;
+				}else if((Me.total <= 0 )||(deck.nth_shuffle == deck.num_of_shuffle && deck.nth_card == 52*deck.num_of_deck)){
+					DotMatrixControl("Rank "+Rank);
 				}else if(playerWin == 2){
 	        		DotMatrixControl("}}");
+	        		itemUse = false;
 	        		Me.BlackJack = false;
 	        		hitBtnClicked = false;
 	        		stayBtnClicked = false;
@@ -1215,6 +1246,7 @@ class PiezoThread extends Thread{
 	        		insuranceBtnClicked = false;
 				}else if(playerWin == 1){
 	        		DotMatrixControl("~~");
+	        		itemUse = false;
 	        		Me.BlackJack = false;
 	        		hitBtnClicked = false;
 	        		stayBtnClicked = false;
@@ -1224,6 +1256,7 @@ class PiezoThread extends Thread{
 	        		insuranceBtnClicked = false;
 				}else if(hitBtnClicked == true){
 					DotMatrixControl("HIT");
+					itemUse = false;
 					Me.BlackJack = false;
 	        		stayBtnClicked = false;
 	        		splitBtnClicked = false;
@@ -1232,6 +1265,7 @@ class PiezoThread extends Thread{
 	        		insuranceBtnClicked = false;
 				}else if(stayBtnClicked == true){
 					DotMatrixControl("STAY");
+					itemUse = false;
 					Me.BlackJack = false;
 					hitBtnClicked = false;
 	        		splitBtnClicked = false;
@@ -1240,6 +1274,7 @@ class PiezoThread extends Thread{
 	        		insuranceBtnClicked = false;
 				}else if(splitBtnClicked == true){
 					DotMatrixControl("SPLIT");
+					itemUse = false;
 					Me.BlackJack = false;
 					hitBtnClicked = false;
 	        		stayBtnClicked = false;
@@ -1248,6 +1283,7 @@ class PiezoThread extends Thread{
 	        		insuranceBtnClicked = false;
 				}else if(doubleBtnClicked == true){
 					DotMatrixControl("DOUBLE");
+					itemUse = false;
 					Me.BlackJack = false;
 					hitBtnClicked = false;
 	        		stayBtnClicked = false;
@@ -1256,6 +1292,7 @@ class PiezoThread extends Thread{
 	        		insuranceBtnClicked = false;
 				}else if(evenmoneyBtnClicked == true){
 					DotMatrixControl("EVEN MONEY");
+					itemUse = false;
 					Me.BlackJack = false;
 					hitBtnClicked = false;
 	        		stayBtnClicked = false;
@@ -1264,6 +1301,7 @@ class PiezoThread extends Thread{
 	        		insuranceBtnClicked = false;
 				}else if(insuranceBtnClicked == true){
 					DotMatrixControl("INSURANCE");
+					itemUse = false;
 					Me.BlackJack = false;
 					hitBtnClicked = false;
 	        		stayBtnClicked = false;
@@ -1275,7 +1313,6 @@ class PiezoThread extends Thread{
     	}
     }
 	class Item {
-	
 		int item_num = 0;
 		String Card;
 		String effect;
@@ -1300,6 +1337,7 @@ class PiezoThread extends Thread{
 		   else if(item_num == 5){effect = "패배 시에 배팅 금액을 돌려받기";}
 		   }  
 	}
+	
 	class Exit extends Thread{
 		public void run()
 		{
@@ -1322,26 +1360,37 @@ class PiezoThread extends Thread{
 						if(Ai_list.get(i).total > Me.total)
 							rank++;
 					}
-					String Rank = Integer.toString(rank);
-					DotMatrixControl(Rank+"등");
+					Rank = Integer.toString(rank);
+
 					try {
 						sleep(5000);
 					} catch (InterruptedException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
-					finish(); 
-		    		android.os.Process.killProcess(android.os.Process.myPid());
+					//finish();
+					handler.sendEmptyMessage(0);
 				}
 			}
 		}
 	}
-}
-
-
-
-        
-
-
 	
+	public Handler handler = new Handler(){
+		public void handleMessage(Message msg){
+			if(msg.what ==0){
+				new AlertDialog.Builder(InGameActivity.this)
+				.setTitle("GAME OVER")
+				.setMessage("게임에서 졌습니다.")
+				.setPositiveButton("게임 종료", new DialogInterface.OnClickListener() {
+					
+					public void onClick(DialogInterface arg0, int arg1) {
+						// TODO Auto-generated method stub
+						arg0.dismiss();
+			    		android.os.Process.killProcess(android.os.Process.myPid());
+					}
+				}).show();
+			}
+		}
+	};
+}
 	

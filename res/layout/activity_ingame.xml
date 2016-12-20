@@ -166,7 +166,6 @@
         
     </LinearLayout>
 
-
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -180,7 +179,9 @@
             android:layout_marginRight="40dp"
             android:layout_marginTop="20dp"
             android:gravity="right"
-            android:text="ScoreBoard" />
+            android:text="ScoreBoard"
+            android:textColor="#ffffff"
+            android:textSize="8dp"/>
 
 		<TextView
             android:id="@+id/splitView2"
